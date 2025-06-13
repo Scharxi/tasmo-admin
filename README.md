@@ -1,235 +1,279 @@
 # Tasmota Admin Dashboard
 
-Ein modernes, professionelles Admin Dashboard für die Verwaltung von Tasmota Smart Devices. Entwickelt mit Next.js 15, TypeScript, Tailwind CSS und shadcn/ui.
+A modern, professional admin dashboard for managing Tasmota smart plugs and devices. Built with Next.js 15, PostgreSQL, Prisma, and shadcn/ui.
 
-![Dashboard Preview](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=Tasmota+Admin+Dashboard)
+## Features
 
-## 🚀 Features
+- 🏠 **Device Management**: Register, monitor, and control Tasmota devices
+- ⚡ **Power Control**: Turn devices on/off with prominent power buttons
+- 📊 **Energy Monitoring**: Track power consumption and energy usage
+- 🔍 **Auto-Discovery**: Automatically discover Tasmota devices on your network
+- 📱 **Responsive Design**: Works on desktop, tablet, and mobile
+- 🎨 **Modern UI**: Clean, professional interface with smooth animations
+- 🚀 **High Performance**: Optimized for smooth scrolling and interactions
 
-- **Modern UI**: Elegantes, responsives Design mit glassmorphen Effekten
-- **Real-time Updates**: Live-Aktualisierung der Gerätestatus alle 10 Sekunden
-- **Device Management**: Ein-/Ausschalten von Geräten mit visueller Rückmeldung
-- **Energy Monitoring**: Überwachung von Stromverbrauch und Energiedaten
-- **Animations**: Flüssige CSS-Animationen und Übergänge
-- **Professional Theme**: Dunkle und helle Modi mit modernen Farbschemata
-- **Mobile First**: Vollständig responsive für alle Bildschirmgrößen
+## Tech Stack
 
-## 🏗️ Tech Stack
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **UI**: shadcn/ui, Tailwind CSS
+- **State Management**: TanStack Query
+- **Containerization**: Docker & Docker Compose
 
-- **Framework**: Next.js 15 mit App Router
-- **Styling**: Tailwind CSS 4 mit benutzerdefinierten Animationen
-- **UI Components**: shadcn/ui (Custom Implementation)
-- **TypeScript**: Vollständige Typisierung
-- **Icons**: Handcrafted SVG Icons
-- **Backend Integration**: Mock API für Tasmota-Simulator
-
-## 📦 Installation
-
-### Voraussetzungen
+## Prerequisites
 
 - Node.js 18+ 
-- npm, yarn oder pnpm
+- Docker and Docker Compose
+- Git
 
-### Setup
+## Quick Start
 
-1. **Dependencies installieren**:
-```bash
+### 1. Clone the Repository
+
+\`\`\`bash
+git clone <repository-url>
+cd tasmota/tasmo-admin
+\`\`\`
+
+### 2. Install Dependencies
+
+\`\`\`bash
 npm install
-# oder
-yarn install
-# oder
-pnpm install
-```
+\`\`\`
 
-2. **Development Server starten**:
-```bash
+### 3. Start Database
+
+\`\`\`bash
+# Start PostgreSQL with Docker
+docker-compose up -d postgres
+
+# Wait for database to be ready (about 10-15 seconds)
+\`\`\`
+
+### 4. Setup Database
+
+\`\`\`bash
+# Generate Prisma client
+npm run db:generate
+
+# Push database schema
+npm run db:push
+
+# Seed with sample data
+npm run db:seed
+\`\`\`
+
+### 5. Start Development Server
+
+\`\`\`bash
 npm run dev
-# oder
-yarn dev
-# oder
-pnpm dev
-```
+\`\`\`
 
-3. **Dashboard öffnen**:
-   - Öffne [http://localhost:3000](http://localhost:3000) in deinem Browser
+The dashboard will be available at [http://localhost:3001](http://localhost:3001)
 
-## 🔧 Konfiguration
+## Database Management
 
-### Tasmota-Simulator Integration
+### Prisma Studio
+Access the database GUI:
+\`\`\`bash
+npm run db:studio
+\`\`\`
 
-Das Dashboard ist für die Integration mit dem `tasmota-sim` Projekt konfiguriert:
+### Adminer
+Alternative database GUI available at [http://localhost:8080](http://localhost:8080)
+- **Server**: postgres
+- **Username**: tasmota_user  
+- **Password**: tasmota_password
+- **Database**: tasmota_db
 
-1. **Simulator starten** (im `tasmota-sim` Verzeichnis):
-```bash
-# IP-Aliase für direkte Device-Zugriffe erstellen
-./setup-ip-aliases.sh
+### Database Commands
 
-# Container starten
-docker-compose up -d
+\`\`\`bash
+# Generate Prisma client after schema changes
+npm run db:generate
 
-# Devices erstellen
-tasmota-sim create-devices --count 3 --setup-ip-aliases
-```
+# Push schema changes to database
+npm run db:push
 
-2. **API-Endpunkte** (konfiguriert in `src/lib/api.ts`):
-   - Device 1: `http://172.25.0.100` (kitchen_001)
-   - Device 2: `http://172.25.0.101` (kitchen_002)
-   - Device 3: `http://172.25.0.102` (kitchen_003)
+# Create and run migrations
+npm run db:migrate
 
-### Umgebungsvariablen
+# Reset database and reseed
+npm run db:push --force-reset
+npm run db:seed
+\`\`\`
 
-Erstelle eine `.env.local` Datei für erweiterte Konfiguration:
+## Adding Tasmota Devices
 
-```env
-# API Base URL (optional)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8081
+### Method 1: Auto-Discovery
+1. Click "Add Device" in the dashboard
+2. Click "Discover" to scan your network
+3. Select discovered devices to add them
 
-# Tasmota Auth (falls erforderlich)
-NEXT_PUBLIC_TASMOTA_USER=admin
-NEXT_PUBLIC_TASMOTA_PASS=test1234!
+### Method 2: Manual Entry
+1. Click "Add Device" in the dashboard
+2. Fill in the device details:
+   - **Device ID**: Unique identifier (e.g., kitchen_001)
+   - **Device Name**: Human-readable name
+   - **IP Address**: Device's network IP
+   - **MAC Address**: (Optional) Device MAC address
+   - **Firmware Version**: Tasmota firmware version
 
-# Refresh-Intervall (Millisekunden)
-NEXT_PUBLIC_REFRESH_INTERVAL=10000
-```
+## API Endpoints
 
-## 🎨 UI Components
+### Devices
+- `GET /api/devices` - Get all devices
+- `POST /api/devices` - Create new device
+- `POST /api/devices/[deviceId]/toggle` - Toggle device power
+- `DELETE /api/devices/[deviceId]` - Delete device
 
-### Verfügbare Komponenten
+### Device Discovery
+- `POST /api/devices/discover` - Discover Tasmota devices on network
 
-- **Card**: Basis-Container für Inhalte
-- **Badge**: Status-Indikatoren (Online/Offline/Active)
-- **Switch**: Toggle-Schalter für Geräte-Power
-- **Button**: Aktions-Buttons mit Varianten
-- **DeviceCard**: Spezialisierte Karte für Tasmota-Geräte
-- **Dashboard**: Haupt-Layout mit Stats und Device-Grid
+## Environment Variables
 
-### Styling-System
+Create a `.env` file with:
 
-- **CSS Variables**: Konsistente Farb- und Größen-Tokens
-- **Custom Animations**: 
-  - `fade-in`: Sanftes Einblenden
-  - `fade-in-up`: Einblenden mit Bewegung
-  - `pulse-glow`: Leuchtender Puls-Effekt
-  - `shimmer`: Loading-Animation
-- **Glass Effects**: Backdrop-blur für moderne Glasoptik
+\`\`\`env
+# Database
+DATABASE_URL="postgresql://tasmota_user:tasmota_password@localhost:5432/tasmota_db?schema=public"
 
-## 📊 Dashboard Features
+# Next.js
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:3001"
 
-### Statistik-Karten
+# App Configuration
+NODE_ENV="development"
+PORT=3001
+\`\`\`
 
-- **Total Devices**: Anzahl aller konfigurierten Geräte
-- **Online**: Anzahl der online verfügbaren Geräte
-- **Active**: Anzahl der eingeschalteten Geräte
-- **Total Power**: Gesamt-Stromverbrauch aller aktiven Geräte
+## Database Schema
 
-### Device Management
+### Device Model
+- Device information (ID, name, IP, MAC, firmware)
+- Status (online/offline/error)
+- Power state and energy consumption
+- WiFi signal strength and uptime
+- Timestamps for tracking
 
-- **Status-Übersicht**: Online/Offline/Power-Status mit visuellen Indikatoren
-- **Power Control**: Ein-/Ausschalten mit animiertem Toggle-Switch
-- **Energy Monitoring**: Aktueller Verbrauch und Gesamt-Energie
-- **Technical Details**: WiFi-Signal, Uptime, Firmware-Version
+### Energy Readings
+- Historical power consumption data
+- Voltage and current measurements
+- Timestamped for analytics
 
-### Real-time Features
+### Device Logs
+- System logs and events
+- Different log levels (DEBUG, INFO, WARN, ERROR)
+- Structured logging with JSON data
 
-- **Auto-Refresh**: Automatische Aktualisierung alle 10 Sekunden
-- **Manual Refresh**: Button mit Spin-Animation
-- **Loading States**: Shimmer-Effekte während Ladezuständen
-- **Error Handling**: Graceful Fallbacks bei API-Fehlern
+## Development
 
-## 🔄 API Integration
+### Project Structure
+\`\`\`
+tasmo-admin/
+├── src/
+│   ├── app/                 # Next.js app router
+│   │   ├── api/            # API routes
+│   │   └── globals.css     # Global styles
+│   ├── components/         # React components
+│   │   ├── ui/            # shadcn/ui components
+│   │   ├── Dashboard.tsx   # Main dashboard
+│   │   ├── DeviceCard.tsx  # Device card component
+│   │   └── AddDeviceDialog.tsx # Add device dialog
+│   └── lib/               # Utilities and services
+│       ├── api.ts         # API client
+│       ├── db.ts          # Database service
+│       ├── prisma.ts      # Prisma client
+│       └── utils.ts       # Utility functions
+├── prisma/
+│   ├── schema.prisma      # Database schema
+│   └── seed.ts           # Database seeding
+├── docker-compose.yml     # Docker services
+└── package.json
+\`\`\`
 
-### Mock-Implementation
+### Adding New Features
 
-Das Dashboard verwendet einen Mock-API-Layer (`src/lib/api.ts`) für die Demo:
+1. **Database Changes**: Update `prisma/schema.prisma`
+2. **API Routes**: Add routes in `src/app/api/`
+3. **Components**: Create components in `src/components/`
+4. **Services**: Add business logic in `src/lib/`
 
-```typescript
-// Device-Liste abrufen
-const devices = await tasmotaAPI.fetchDevices()
+### Performance Optimizations
 
-// Gerät ein-/ausschalten
-await tasmotaAPI.toggleDevicePower(deviceId)
+The dashboard is optimized for performance:
+- Minimal animations and effects
+- Efficient database queries
+- Optimized React rendering
+- Smooth scrolling experience
 
-// Gerätestatus abfragen
-const device = await tasmotaAPI.getDeviceStatus(deviceId)
+## Troubleshooting
 
-// Energiedaten abrufen
-const energy = await tasmotaAPI.getEnergyData(deviceId)
-```
+### Database Connection Issues
+\`\`\`bash
+# Check if PostgreSQL is running
+docker-compose ps
 
-### Echter Tasmota-Integration
+# View database logs
+docker-compose logs postgres
 
-Für die Integration mit echten Tasmota-Geräten, passe die API-Klasse an:
+# Restart database
+docker-compose restart postgres
+\`\`\`
 
-```typescript
-// In src/lib/api.ts
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081'
+### Prisma Issues
+\`\`\`bash
+# Reset Prisma client
+rm -rf node_modules/.prisma
+npm run db:generate
 
-// Beispiel für echte HTTP-Requests
-async fetchDevices(): Promise<TasmotaDevice[]> {
-  const response = await fetch(`${BASE_URL}/devices`)
-  return response.json()
-}
-```
+# Reset database
+npm run db:push --force-reset
+npm run db:seed
+\`\`\`
 
-## 🎯 Geplante Features
+### Port Conflicts
+If port 3001 is in use, update the PORT in `.env` or use:
+\`\`\`bash
+PORT=3002 npm run dev
+\`\`\`
 
-- [ ] **TanStack Query**: Erweiterte State-Management und Caching
-- [ ] **WebSocket Integration**: Real-time Updates ohne Polling
-- [ ] **Device Grouping**: Räume und Gruppen für bessere Organisation
-- [ ] **Energy Charts**: Historische Verbrauchsdiagramme mit Recharts
-- [ ] **Settings Panel**: Benutzer-Konfiguration und Präferenzen
-- [ ] **Export Functions**: CSV/Excel-Export von Energiedaten
-- [ ] **Push Notifications**: Browser-Benachrichtigungen für Status-Änderungen
+## Production Deployment
 
-## 🚀 Deployment
+### Environment Setup
+1. Set production environment variables
+2. Use a managed PostgreSQL service
+3. Configure proper security settings
+4. Set up SSL/TLS certificates
 
-### Production Build
-
-```bash
+### Build and Deploy
+\`\`\`bash
+# Build for production
 npm run build
+
+# Start production server
 npm start
-```
+\`\`\`
 
-### Docker Deployment
+## Contributing
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-### Vercel Deployment
+## License
 
-Das Projekt ist optimiert für Vercel-Deployment:
+This project is licensed under the MIT License.
 
-```bash
-vercel --prod
-```
+## Support
 
-## 🤝 Contributing
-
-1. Fork das Repository
-2. Erstelle einen Feature-Branch (`git checkout -b feature/amazing-feature`)
-3. Committe deine Änderungen (`git commit -m 'Add amazing feature'`)
-4. Push den Branch (`git push origin feature/amazing-feature`)
-5. Öffne eine Pull Request
-
-## 📝 License
-
-Dieses Projekt steht unter der MIT License. Siehe [LICENSE](LICENSE) für Details.
-
-## 🔗 Links
-
-- [Tasmota Documentation](https://tasmota.github.io/docs/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [shadcn/ui](https://ui.shadcn.com/)
+For issues and questions:
+1. Check the troubleshooting section
+2. Review existing GitHub issues
+3. Create a new issue with detailed information
 
 ---
 
-**Entwickelt mit ❤️ für das Tasmota-Ökosystem**
+**Happy Smart Home Management! 🏠⚡**
