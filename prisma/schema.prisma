@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Device {
+  id                String   @id @default(cuid())
+  deviceId          String   @unique @map("device_id")
+  deviceName        String   @map("device_name")
+  ipAddress         String   @map("ip_address")
+  macAddress        String?  @map("mac_address")
+  firmwareVersion   String   @map("firmware_version")
+  status            DeviceStatus @default(OFFLINE)
+  powerState        Boolean  @default(false) @map("power_state")
+  energyConsumption Float    @default(0) @map("energy_consumption")
+  totalEnergy       Float    @default(0) @map("total_energy")
+  wifiSignal        Int      @default(-70) @map("wifi_signal")
+  uptime            Int      @default(0)
+  voltage           Float?
+  current           Float?
+  lastSeen          DateTime @default(now()) @map("last_seen")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  energyReadings    EnergyReading[]
+  deviceLogs        DeviceLog[]
+
+  @@map("devices")
+}
+
+model EnergyReading {
+  id        String   @id @default(cuid())
+  deviceId  String   @map("device_id")
+  power     Float
+  energy    Float
+  voltage   Float?
+  current   Float?
+  timestamp DateTime @default(now())
+  
+  // Relations
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("energy_readings")
+}
+
+model DeviceLog {
+  id        String    @id @default(cuid())
+  deviceId  String    @map("device_id")
+  level     LogLevel  @default(INFO)
+  message   String
+  data      Json?
+  timestamp DateTime  @default(now())
+  
+  // Relations
+  device    Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("device_logs")
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+} 
