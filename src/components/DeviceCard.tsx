@@ -3,13 +3,18 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { TasmotaDevice } from '@/lib/api'
 
 // Modern SVG icons with enhanced styling
 const PowerIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+)
+
+const PowerButtonIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
   </svg>
 )
 
@@ -137,12 +142,24 @@ export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceC
                 <p className="text-xs text-gray-500">Device switch</p>
               </div>
             </div>
-            <Switch
-              checked={device.power_state}
-              onCheckedChange={() => onTogglePower(device.device_id)}
+            {/* Prominent Power Button */}
+            <button
+              onClick={() => onTogglePower(device.device_id)}
               disabled={isLoading || device.status === 'offline'}
-              className="switch-button scale-110"
-            />
+              className={`relative p-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+                device.power_state && device.status === 'online'
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 hover:scale-105'
+                  : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 hover:scale-105'
+              } ${isLoading ? 'animate-pulse' : ''}`}
+              title={device.power_state ? 'Turn Off' : 'Turn On'}
+            >
+              <PowerButtonIcon />
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </button>
           </div>
         </div>
 
