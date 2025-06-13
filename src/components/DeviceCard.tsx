@@ -47,8 +47,6 @@ interface DeviceCardProps {
 }
 
 export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-
   const formatEnergy = (watts: number): string => {
     if (watts >= 1000) {
       return `${(watts / 1000).toFixed(1)}kW`
@@ -89,169 +87,127 @@ export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceC
   const wifi = getWifiStrength(device.wifi_signal)
 
   return (
-    <div className="group relative">
-      <Card 
-        className={`relative glass rounded-2xl border border-white/20 backdrop-blur-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-100/50 hover:scale-[1.02] ${
-          device.power_state && device.status === 'online' 
-            ? 'ring-2 ring-emerald-200/50 shadow-emerald-100/50' 
-            : ''
-        }`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Animated Background Gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-br transition-opacity duration-500 ${
-          device.power_state && device.status === 'online' 
-            ? 'from-emerald-50/30 to-blue-50/30 opacity-100' 
-            : 'from-gray-50/20 to-slate-50/20 opacity-50'
-        }`} />
+    <Card className={`bg-white/95 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200 ${
+      device.power_state && device.status === 'online' 
+        ? 'ring-2 ring-emerald-200' 
+        : ''
+    }`}>
+      {/* Status Indicator Bar */}
+      <div className={`h-1 bg-gradient-to-r ${
+        device.status === 'offline' 
+          ? 'from-red-400 to-red-600' 
+          : device.power_state
+            ? 'from-emerald-400 to-green-500'
+            : 'from-amber-400 to-orange-500'
+      }`} />
 
-        {/* Status Indicator Bar */}
-        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r transition-all duration-300 ${
-          device.status === 'offline' 
-            ? 'from-red-400 to-red-600' 
-            : device.power_state
-              ? 'from-emerald-400 to-green-500'
-              : 'from-amber-400 to-orange-500'
-        }`} />
+      <CardHeader className="pb-4 pt-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center space-x-3">
+            <div className={`p-3 rounded-2xl ${
+              device.power_state && device.status === 'online' 
+                ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg' 
+                : 'bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-lg'
+            }`}>
+              <PlugIcon />
+            </div>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-lg font-bold text-gray-800 truncate">
+                {device.device_name}
+              </CardTitle>
+              <p className="text-sm text-gray-500 font-medium">{device.ip_address}</p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2">
+            {getStatusBadge()}
+          </div>
+        </div>
+      </CardHeader>
 
-        <CardHeader className="relative pb-4 pt-6">
-          <div className="flex items-start justify-between">
+      <CardContent className="space-y-6 pt-0">
+        {/* Power Control Section */}
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className={`relative p-3 rounded-2xl transition-all duration-300 ${
-                device.power_state && device.status === 'online' 
-                  ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200' 
-                  : 'bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-lg shadow-gray-200'
-              }`}>
-                <PlugIcon />
-                {device.power_state && device.status === 'online' && (
-                  <div className="absolute inset-0 bg-emerald-400 rounded-2xl animate-pulse opacity-50"></div>
-                )}
+              <div className="p-2 bg-blue-100 rounded-xl">
+                <PowerIcon />
               </div>
-              <div className="min-w-0 flex-1">
-                <CardTitle className="text-lg font-bold text-gray-800 truncate">
-                  {device.device_name}
-                </CardTitle>
-                <p className="text-sm text-gray-500 font-medium">{device.ip_address}</p>
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Power Control</p>
+                <p className="text-xs text-gray-500">Device switch</p>
               </div>
             </div>
-            <div className="flex flex-col items-end space-y-2">
-              {getStatusBadge()}
+            <Switch
+              checked={device.power_state}
+              onCheckedChange={() => onTogglePower(device.device_id)}
+              disabled={isLoading || device.status === 'offline'}
+              className="switch-button scale-110"
+            />
+          </div>
+        </div>
+
+        {/* Energy Consumption */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Draw</p>
+              <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                {formatEnergy(device.energy_consumption)}
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div 
+                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((device.energy_consumption / 100) * 100, 100)}%` }}
+                />
+              </div>
             </div>
           </div>
-        </CardHeader>
-
-        <CardContent className="relative space-y-6 pt-0">
-          {/* Power Control Section */}
-          <div className="glass-dark rounded-xl p-4 border border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-xl">
-                  <PowerIcon />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-700">Power Control</p>
-                  <p className="text-xs text-gray-500">Device switch</p>
-                </div>
-              </div>
-              <Switch
-                checked={device.power_state}
-                onCheckedChange={() => onTogglePower(device.device_id)}
-                disabled={isLoading || device.status === 'offline'}
-                className="switch-button scale-110"
-              />
+          
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Used</p>
+              <p className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                {device.total_energy.toFixed(1)} kWh
+              </p>
+              <p className="text-xs text-purple-600 font-medium">Lifetime consumption</p>
             </div>
           </div>
+        </div>
 
-          {/* Energy Consumption */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="glass-dark rounded-xl p-4 border border-white/10 group hover:border-blue-200/30 transition-colors duration-300">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Draw</p>
-                <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                  {formatEnergy(device.energy_consumption)}
+        {/* Technical Details */}
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+            <ChipIcon />
+            <span>Device Information</span>
+          </h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center space-x-2">
+              <WifiIcon />
+              <div>
+                <p className="text-xs text-gray-500">WiFi Signal</p>
+                <p className={`text-sm font-semibold ${wifi.color}`}>
+                  {wifi.strength} ({device.wifi_signal}dBm)
                 </p>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min((device.energy_consumption / 100) * 100, 100)}%` }}
-                  />
-                </div>
               </div>
             </div>
             
-            <div className="glass-dark rounded-xl p-4 border border-white/10 group hover:border-purple-200/30 transition-colors duration-300">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Used</p>
-                <p className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                  {device.total_energy.toFixed(1)} kWh
+            <div className="flex items-center space-x-2">
+              <ClockIcon />
+              <div>
+                <p className="text-xs text-gray-500">Uptime</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {formatUptime(device.uptime)}
                 </p>
-                <p className="text-xs text-purple-600 font-medium">Lifetime consumption</p>
               </div>
             </div>
           </div>
-
-          {/* Technical Details */}
-          <div className="glass-dark rounded-xl p-4 border border-white/10">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
-              <ChipIcon />
-              <span>Device Information</span>
-            </h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center space-x-2">
-                <WifiIcon />
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xs font-medium ${wifi.color}`}>
-                    {wifi.strength}
-                  </p>
-                  <p className="text-xs text-gray-500">{device.wifi_signal}dBm</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <ClockIcon />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-gray-700">
-                    {formatUptime(device.uptime)}
-                  </p>
-                  <p className="text-xs text-gray-500">Uptime</p>
-                </div>
-              </div>
-              
-              <div className="col-span-2 pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-gray-700">Firmware</p>
-                    <p className="text-xs text-gray-500">{device.firmware_version}</p>
-                  </div>
-                  {device.voltage && (
-                    <div className="text-right">
-                      <p className="text-xs font-medium text-gray-700">{device.voltage}V</p>
-                      <p className="text-xs text-gray-500">Input</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-500">Firmware</p>
+            <p className="text-sm font-medium text-gray-700">{device.firmware_version}</p>
           </div>
-        </CardContent>
-
-        {/* Loading Overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
-            <div className="flex flex-col items-center space-y-3">
-              <div className="relative">
-                <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                <div className="absolute inset-0 w-8 h-8 border-3 border-transparent border-r-blue-400 rounded-full animate-spin animation-delay-150"></div>
-              </div>
-              <p className="text-sm font-medium text-gray-600">Updating...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Hover Effect Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-br from-blue-50/10 to-purple-50/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 } 
