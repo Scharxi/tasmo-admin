@@ -410,6 +410,28 @@ export class TasmotaAPI {
       throw error
     }
   }
+
+  // Fetch device metrics (Messwerte) for detailed monitoring
+  async fetchDeviceMetrics(deviceId: string): Promise<EnergyData & { lastUpdate: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/devices/${deviceId}/metrics`)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error(`Failed to fetch device metrics for ${deviceId}:`, error)
+      throw error
+    }
+  }
+
+  // Add device (alias for createDevice for consistency)
+  async addDevice(data: CreateDeviceRequest): Promise<TasmotaDevice> {
+    return this.createDevice(data)
+  }
 }
 
 export const tasmotaAPI = new TasmotaAPI() 
