@@ -35,7 +35,8 @@ export async function getDeviceStatus(ipAddress: string, timeout = 5000): Promis
   try {
     const deviceUrl = getDeviceUrl(ipAddress)
     
-    const response = await fetch(`${deviceUrl}/`, {
+    // First get basic device info
+    const basicResponse = await fetch(`${deviceUrl}/`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -43,11 +44,21 @@ export async function getDeviceStatus(ipAddress: string, timeout = 5000): Promis
       signal: AbortSignal.timeout(timeout)
     })
     
-    if (!response.ok) {
+    if (!basicResponse.ok) {
       return null
     }
     
-    return await response.json()
+    const basicInfo = await basicResponse.json()
+    
+    // Then get power status using Tasmota command
+    const powerStatus = await sendTasmotaCommand(ipAddress, 'Power', timeout)
+    
+    // Combine both responses
+    return {
+      ...basicInfo,
+      power_state: powerStatus?.POWER === 'ON',
+      power_info: powerStatus
+    }
   } catch (error) {
     console.error(`Failed to get status from device at ${ipAddress}:`, error)
     return null
