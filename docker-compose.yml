@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: tasmota-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tasmota_db
+      POSTGRES_USER: tasmota_user
+      POSTGRES_PASSWORD: tasmota_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tasmota-network
+
+  adminer:
+    image: adminer:latest
+    container_name: tasmota-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - tasmota-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  tasmota-network:
+    driver: bridge 
