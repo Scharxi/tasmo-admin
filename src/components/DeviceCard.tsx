@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { DeviceMetrics } from '@/components/DeviceMetrics'
 import { TasmotaDevice } from '@/lib/api'
 
 // Modern SVG icons with enhanced styling
@@ -52,6 +54,7 @@ interface DeviceCardProps {
 }
 
 export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceCardProps) {
+  const [showMetrics, setShowMetrics] = useState(false)
   const formatEnergy = (watts: number): string => {
     if (watts >= 1000) {
       return `${(watts / 1000).toFixed(1)}kW`
@@ -224,6 +227,29 @@ export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceC
             <p className="text-sm font-medium text-gray-700">{device.firmware_version}</p>
           </div>
         </div>
+
+        {/* Messwerte Toggle Button */}
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMetrics(!showMetrics)}
+            className="text-xs font-medium"
+            disabled={device.status === 'offline'}
+          >
+            {showMetrics ? 'Messwerte ausblenden' : 'Detaillierte Messwerte anzeigen'}
+          </Button>
+        </div>
+
+        {/* Detailed Metrics Panel */}
+        {showMetrics && (
+          <div className="mt-4">
+            <DeviceMetrics 
+              deviceId={device.device_id} 
+              className="border-t border-gray-100 pt-4"
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   )
