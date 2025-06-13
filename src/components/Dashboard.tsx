@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DeviceCard } from '@/components/DeviceCard'
 import { AddDeviceDialog } from '@/components/AddDeviceDialog'
-import { TasmotaDevice, tasmotaAPI } from '@/lib/api'
+import { DeviceMetrics } from '@/components/DeviceMetrics'
+import { useDevices, useToggleDevicePower, useDashboardStats, useDeviceStateSynchronization } from '@/hooks/useDevices'
+import { TasmotaDevice } from '@/lib/api'
 
 // Modern SVG Icons with better styling
 const HomeIcon = () => (
@@ -46,42 +48,20 @@ const PowerIcon = () => (
   </svg>
 )
 
-interface DashboardStats {
-  totalDevices: number
-  onlineDevices: number
-  activeDevices: number
-  totalConsumption: number
-}
-
 export function Dashboard() {
-  const [devices, setDevices] = useState<TasmotaDevice[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
-
-  const loadDevices = async (showRefreshIndicator = false) => {
-    if (showRefreshIndicator) setRefreshing(true)
-    try {
-      const data = await tasmotaAPI.fetchDevices()
-      setDevices(data)
-      setLastUpdate(new Date())
-    } catch (error) {
-      console.error('Failed to load devices:', error)
-    } finally {
-      setLoading(false)
-      if (showRefreshIndicator) {
-        setTimeout(() => setRefreshing(false), 800) // Show refresh animation briefly
-      }
-    }
-  }
+  
+  // Tanstack Query Hooks
+  const { data: devices = [], isLoading: loading, isRefetching: refreshing, dataUpdatedAt } = useDevices()
+  const togglePowerMutation = useToggleDevicePower()
+  const stats = useDashboardStats()
+  const { forceRefresh } = useDeviceStateSynchronization()
 
   const handleTogglePower = async (deviceId: string) => {
     setSelectedDevice(deviceId)
     try {
-      await tasmotaAPI.toggleDevicePower(deviceId)
-      await loadDevices() // Refresh data after toggle
+      const result = await togglePowerMutation.mutateAsync(deviceId)
     } catch (error) {
       console.error('Failed to toggle device power:', error)
     } finally {
@@ -89,29 +69,7 @@ export function Dashboard() {
     }
   }
 
-  const calculateStats = (): DashboardStats => {
-    return {
-      totalDevices: devices.length,
-      onlineDevices: devices.filter(d => d.status === 'online').length,
-      activeDevices: devices.filter(d => d.power_state && d.status === 'online').length,
-      totalConsumption: devices
-        .filter(d => d.status === 'online')
-        .reduce((sum, d) => sum + d.energy_consumption, 0)
-    }
-  }
-
-  useEffect(() => {
-    loadDevices()
-    
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(() => {
-      loadDevices()
-    }, 10000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  const stats = calculateStats()
+  const lastUpdate = new Date(dataUpdatedAt)
 
   if (loading) {
     return (
@@ -194,15 +152,21 @@ export function Dashboard() {
                     {lastUpdate.toLocaleTimeString()}
                   </p>
                 </div>
-                <button
-                  onClick={() => loadDevices(true)}
-                  disabled={refreshing}
-                  className={`group relative p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors duration-200 hover:shadow-md ${
-                    refreshing ? 'animate-spin' : ''
-                  }`}
-                >
-                  <RefreshIcon />
-                </button>
+                <div className="flex items-center gap-2">
+                  {refreshing && (
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  )}
+                  <Badge variant="outline" className="text-xs">
+                    Live Updates
+                  </Badge>
+                  <button
+                    onClick={forceRefresh}
+                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                    title="Force Refresh"
+                  >
+                    <RefreshIcon />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -375,7 +339,6 @@ export function Dashboard() {
         isOpen={showAddDialog}
         onClose={() => setShowAddDialog(false)}
         onDeviceAdded={() => {
-          loadDevices()
           setShowAddDialog(false)
         }}
       />
