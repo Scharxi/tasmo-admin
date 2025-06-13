@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { DeviceService } from '@/lib/db'
 import { sendTasmotaCommand, getDeviceStatus } from '@/lib/tasmota-config'
 
-// Function to toggle device power using Tasmota command
-async function toggleTasmotaDevice(ipAddress: string): Promise<boolean> {
-  const result = await sendTasmotaCommand(ipAddress, 'Power TOGGLE')
-  return result && (result.POWER === 'ON' || result.POWER === 'OFF')
-}
-
 // POST /api/devices/[deviceId]/toggle - Toggle device power
 export async function POST(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
     const { deviceId } = await params
@@ -33,9 +27,9 @@ export async function POST(
     }
     
     // Try to communicate with the actual Tasmota device
-    const toggleSuccess = await toggleTasmotaDevice(device.ipAddress)
+    const toggleResult = await sendTasmotaCommand(device.ipAddress, 'Power TOGGLE')
     
-    if (!toggleSuccess) {
+    if (!toggleResult || (!toggleResult.POWER || (toggleResult.POWER !== 'ON' && toggleResult.POWER !== 'OFF'))) {
       // If direct communication fails, update device status to offline
       await DeviceService.updateDeviceByDeviceId(deviceId, {
         status: 'OFFLINE',
@@ -48,14 +42,17 @@ export async function POST(
       )
     }
     
-    // Get the current status from the device to update our database
+    // Extract power state directly from toggle command response
+    const newPowerState = toggleResult.POWER === 'ON'
+    
+    // Get additional device status (but use toggle result for power state)
     const deviceStatus = await getDeviceStatus(device.ipAddress)
     
     let updatedDevice
     if (deviceStatus) {
-      // Update database with real device status
+      // Update database with real device status, but use toggle result for power state
       updatedDevice = await DeviceService.updateDeviceByDeviceId(deviceId, {
-        powerState: deviceStatus.power_state || false,
+        powerState: newPowerState, // Use the toggle command result for power state
         energyConsumption: deviceStatus.energy_consumption || 0,
         totalEnergy: deviceStatus.total_energy || device.totalEnergy,
         wifiSignal: deviceStatus.wifi_signal || device.wifiSignal,
@@ -66,8 +63,12 @@ export async function POST(
         lastSeen: new Date()
       })
     } else {
-      // Fallback: just toggle the power state in database
-      updatedDevice = await DeviceService.toggleDevicePower(deviceId)
+      // Fallback: use toggle result for power state
+      updatedDevice = await DeviceService.updateDeviceByDeviceId(deviceId, {
+        powerState: newPowerState,
+        status: 'ONLINE',
+        lastSeen: new Date()
+      })
     }
     
     // Transform response
@@ -90,7 +91,8 @@ export async function POST(
     
     return NextResponse.json(transformedDevice)
   } catch (error) {
-    console.error('Error toggling device power:', error)
+    const { deviceId } = await params
+    console.error(`Error toggling device power for ${deviceId}:`, error)
     
     if (error instanceof Error && error.message === 'Device not found') {
       return NextResponse.json(
