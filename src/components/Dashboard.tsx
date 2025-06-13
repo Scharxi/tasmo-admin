@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { DeviceCard } from '@/components/DeviceCard'
+import { AddDeviceDialog } from '@/components/AddDeviceDialog'
 import { TasmotaDevice, tasmotaAPI } from '@/lib/api'
 
 // Modern SVG Icons with better styling
@@ -57,6 +59,7 @@ export function Dashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
+  const [showAddDialog, setShowAddDialog] = useState(false)
 
   const loadDevices = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) setRefreshing(true)
@@ -326,6 +329,15 @@ export function Dashboard() {
               <Badge variant="success" className="px-3 py-1 font-medium">
                 {stats.onlineDevices} online
               </Badge>
+              <Button
+                onClick={() => setShowAddDialog(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Device
+              </Button>
             </div>
           </div>
 
@@ -357,6 +369,16 @@ export function Dashboard() {
           )}
         </div>
       </main>
+
+      {/* Add Device Dialog */}
+      <AddDeviceDialog
+        isOpen={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onDeviceAdded={() => {
+          loadDevices()
+          setShowAddDialog(false)
+        }}
+      />
     </div>
   )
 }
