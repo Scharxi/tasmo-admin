@@ -91,10 +91,6 @@ export function useToggleDevicePower() {
         queryClient.setQueryData(deviceKeys.lists(), context.previousDevices)
       }
     },
-    onSettled: (data, error, deviceId) => {
-      // Immediate refresh to ensure we have the latest state
-      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
-    },
   })
 }
 
