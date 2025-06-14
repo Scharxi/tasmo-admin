@@ -27,6 +27,9 @@ export interface EnergyData {
   total: number
   today: number
   yesterday: number
+  has_energy_monitoring?: boolean
+  device_online?: boolean
+  message?: string
 }
 
 export interface DeviceResponse {
@@ -412,7 +415,7 @@ export class TasmotaAPI {
   }
 
   // Fetch device metrics (Messwerte) for detailed monitoring
-  async fetchDeviceMetrics(deviceId: string): Promise<EnergyData & { lastUpdate: string }> {
+  async fetchDeviceMetrics(deviceId: string): Promise<EnergyData & { lastUpdate: string, last_update?: string }> {
     try {
       const response = await fetch(`${this.baseUrl}/devices/${deviceId}/metrics`)
       
@@ -421,7 +424,14 @@ export class TasmotaAPI {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
       }
       
-      return await response.json()
+      const data = await response.json()
+      
+      // Ensure compatibility with both lastUpdate and last_update naming
+      return {
+        ...data,
+        lastUpdate: data.last_update || data.lastUpdate || new Date().toISOString(),
+        last_update: data.last_update || data.lastUpdate || new Date().toISOString()
+      }
     } catch (error) {
       console.error(`Failed to fetch device metrics for ${deviceId}:`, error)
       throw error
