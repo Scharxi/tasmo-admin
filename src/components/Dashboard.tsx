@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -81,6 +81,7 @@ export function Dashboard() {
     setSelectedDevice(deviceId)
     try {
       const result = await togglePowerMutation.mutateAsync(deviceId)
+      console.log('Toggle power result:', result)
     } catch (error) {
       console.error('Failed to toggle device power:', error)
       setNotification({
@@ -88,21 +89,51 @@ export function Dashboard() {
         message: 'Failed to toggle device power'
       })
     } finally {
+      // Clear loading state immediately after request completes
       setSelectedDevice(null)
     }
   }
 
   const handleExecuteWorkflow = async (workflowId: string) => {
+    const workflow = workflows.find(w => w.id === workflowId)
+    const workflowName = workflow?.name || 'Unbekannter Workflow'
+    
     try {
-      const result = await executeWorkflowMutation.mutateAsync(workflowId)
+      // Show executing notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowExecuting(workflowName)
+      }
+      
+      // Also show in dashboard alert
       setNotification({
         type: 'success',
-        message: result.message
+        message: `⏳ Workflow "${workflowName}" wird ausgeführt...`
+      })
+      
+      const result = await executeWorkflowMutation.mutateAsync(workflowId)
+      
+      // Show success notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowSuccess(workflowName, result.message)
+      }
+      
+      // Also show in dashboard alert
+      setNotification({
+        type: 'success',
+        message: `✅ ${result.message || `Workflow "${workflowName}" erfolgreich ausgeführt!`}`
       })
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      
+      // Show error notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowError(workflowName, errorMessage)
+      }
+      
+      // Also show in dashboard alert
       setNotification({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Fehler beim Ausführen des Workflows'
+        message: `❌ Workflow "${workflowName}" fehlgeschlagen: ${errorMessage}`
       })
     }
   }
@@ -147,10 +178,13 @@ export function Dashboard() {
 
   const lastUpdate = new Date(dataUpdatedAt)
 
-  // Clear notification after 5 seconds
-  if (notification) {
-    setTimeout(() => setNotification(null), 5000)
-  }
+  // Clear notification after 7 seconds (longer for workflow messages)
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 7000)
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
 
   if (loading) {
     return (
@@ -491,15 +525,28 @@ export function Dashboard() {
                     {/* Action Section */}
                     <div className="border-t border-gray-100 bg-gray-50/50 p-4">
                       <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleExecuteWorkflow(workflow.id)}
-                          disabled={!workflow.enabled || executeWorkflowMutation.isPending}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white border-0 shadow-sm"
-                        >
-                          <Play className="w-4 h-4 mr-2" />
-                          Ausführen
-                        </Button>
+                                              <Button
+                        size="sm"
+                        onClick={() => handleExecuteWorkflow(workflow.id)}
+                        disabled={!workflow.enabled || executeWorkflowMutation.isPending}
+                        className={`flex-1 text-white border-0 shadow-sm transition-all duration-200 ${
+                          executeWorkflowMutation.isPending
+                            ? 'bg-blue-500 hover:bg-blue-600 animate-pulse'
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                      >
+                        {executeWorkflowMutation.isPending ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Läuft...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Ausführen
+                          </>
+                        )}
+                      </Button>
                         <Link href={`/workflows?edit=${workflow.id}`}>
                           <Button
                             size="sm"
