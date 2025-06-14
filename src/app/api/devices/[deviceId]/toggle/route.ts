@@ -45,28 +45,27 @@ export async function POST(
       )
     }
     
-    // Get comprehensive device status after toggle
-    const deviceStatus = await getDeviceStatus(device.ipAddress, 10000)
+    // Update database with toggle result immediately
+    // The toggle result is the source of truth for power state
+    let updatedDevice = await DeviceService.updateDeviceByDeviceId(deviceId, {
+      powerState: toggleResult.power_state ?? false,
+      status: 'ONLINE',
+      lastSeen: new Date()
+    })
     
-    let updatedDevice
+    // Get comprehensive device status for additional data (but don't override power state)
+    const deviceStatus = await getDeviceStatus(device.ipAddress, 5000) // Shorter timeout for additional data
+    
     if (deviceStatus) {
-      // Update database with comprehensive device status
+      // Update additional data from device status, but keep the toggle result power state
       updatedDevice = await DeviceService.updateDeviceByDeviceId(deviceId, {
-        powerState: toggleResult.power_state ?? deviceStatus.power_state,
-        energyConsumption: deviceStatus.energy_consumption || 0,
-        totalEnergy: deviceStatus.total_energy || device.totalEnergy,
-        wifiSignal: deviceStatus.wifi_signal || device.wifiSignal,
-        uptime: deviceStatus.uptime || 0,
-        voltage: deviceStatus.voltage || device.voltage || 230,
-        current: deviceStatus.current || device.current || 0,
-        status: 'ONLINE',
-        lastSeen: new Date()
-      })
-    } else {
-      // Fallback: use toggle result for power state only
-      console.warn(`Could not get comprehensive status for ${deviceId}, using toggle result only`)
-      updatedDevice = await DeviceService.updateDeviceByDeviceId(deviceId, {
-        powerState: toggleResult.power_state ?? false,
+        powerState: toggleResult.power_state ?? false, // Keep toggle result as source of truth
+        energyConsumption: deviceStatus.energy_consumption || updatedDevice.energyConsumption,
+        totalEnergy: deviceStatus.total_energy || updatedDevice.totalEnergy,
+        wifiSignal: deviceStatus.wifi_signal || updatedDevice.wifiSignal,
+        uptime: deviceStatus.uptime || updatedDevice.uptime,
+        voltage: deviceStatus.voltage || updatedDevice.voltage || 230,
+        current: deviceStatus.current || updatedDevice.current || 0,
         status: 'ONLINE',
         lastSeen: new Date()
       })
