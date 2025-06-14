@@ -111,6 +111,30 @@ export function useAddDevice() {
   })
 }
 
+// Hook für Gerät löschen
+export function useDeleteDevice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (deviceId: string) => {
+      const response = await fetch(`/api/devices/${deviceId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete device')
+      }
+
+      return await response.json()
+    },
+    onSuccess: () => {
+      // Invalidate und refetch devices nach dem Löschen
+      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
+    },
+  })
+}
+
 // Hook für Device Discovery
 export function useDiscoverDevices() {
   const queryClient = useQueryClient()
