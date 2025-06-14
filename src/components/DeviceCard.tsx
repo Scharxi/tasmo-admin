@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
+import { DeviceCategoryDialog } from '@/components/DeviceCategoryDialog'
 import { TasmotaDevice } from '@/lib/api'
-import { Power, Trash2, AlertTriangle, CheckCircle, Wifi } from 'lucide-react'
+import { Power, Trash2, AlertTriangle, CheckCircle, Wifi, Settings } from 'lucide-react'
 
 // Modern SVG icons with enhanced styling
 const PowerIcon = () => (
@@ -117,122 +118,166 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
 
   return (
     <>
-      <Card className={`bg-white/95 rounded-xl border shadow-md hover:shadow-lg transition-all duration-200 ${
-        device.power_state && device.status === 'online' 
-          ? 'border-emerald-300 bg-emerald-50/30' 
-          : 'border-gray-200'
-      }`}>
-        {/* Status Indicator Bar */}
-        <div className={`h-1 bg-gradient-to-r ${
-          device.status === 'offline' 
-            ? 'from-red-400 to-red-600' 
-            : device.power_state
-              ? 'from-emerald-400 to-green-500'
-              : 'from-amber-400 to-orange-500'
-        }`} />
+      <Card className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-fit max-w-full">
+        {/* Category Color Bar */}
+        <div 
+          className="h-1"
+          style={{ 
+            backgroundColor: device.category?.color || (
+              device.status === 'offline' 
+                ? '#ef4444' 
+                : device.power_state
+                  ? '#10b981'
+                  : '#f59e0b'
+            )
+          }}
+        />
 
-        <CardHeader className="pb-3 pt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg ${
-                device.power_state && device.status === 'online' 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-gray-400 text-white'
-              }`}>
+        <CardHeader className="pb-4 pt-5 px-5">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <div 
+                className="p-2 rounded-lg text-white flex-shrink-0"
+                style={{ 
+                  backgroundColor: device.category?.color || (
+                    device.power_state && device.status === 'online' 
+                      ? '#10b981' 
+                      : '#6b7280'
+                  )
+                }}
+              >
                 <PlugIcon />
               </div>
-              <div>
-                <CardTitle className="text-base font-semibold text-gray-800">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-base font-semibold text-gray-800 break-words">
                   {device.device_name}
                 </CardTitle>
-                <p className="text-xs text-gray-500">ID: {device.device_id}</p>
+                <p className="text-xs text-gray-500 break-all">ID: {device.device_id}</p>
               </div>
             </div>
-            <div className="flex flex-col items-end space-y-1">
-              <div className="flex items-center space-x-2">
-                {getStatusBadge()}
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="h-8 w-8 p-1 border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-md transition-colors duration-200 flex items-center justify-center"
-                  title="Gerät entfernen"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-gray-900">
-                  {formatEnergy(device.energy_consumption)}
-                </div>
-                <div className="text-xs text-gray-500">Verbrauch</div>
-              </div>
+            <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
+              {getStatusBadge()}
+              <DeviceCategoryDialog 
+                device={device}
+                trigger={
+                  <button
+                    className="h-7 w-7 p-1 border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                    title="Kategorie bearbeiten"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </button>
+                }
+              />
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="h-7 w-7 p-1 border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                title="Gerät entfernen"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4 pt-0">
+        <CardContent className="space-y-5 pt-0 px-5">
+          {/* Category Info - Always reserve space for consistent layout */}
+          <div className="pb-3 border-b border-gray-100 min-w-0 min-h-[28px] flex items-center">
+            {device.category ? (
+              <div className="flex flex-wrap gap-2 min-w-0">
+                <Badge 
+                  variant="outline" 
+                  className="text-xs font-medium flex-shrink-0"
+                  style={{ 
+                    backgroundColor: `${device.category.color}15`,
+                    borderColor: device.category.color,
+                    color: device.category.color
+                  }}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full mr-1.5 flex-shrink-0"
+                    style={{ backgroundColor: device.category.color }}
+                  />
+                  <span className="truncate">{device.category.name}</span>
+                </Badge>
+                {device.description && (
+                  <span className="text-xs text-gray-500 truncate">• {device.description}</span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
+                <span className="text-xs text-gray-400">Keine Kategorie</span>
+              </div>
+            )}
+          </div>
+          
           {/* Network Info */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">NETZWERK</p>
-              <p className="font-medium text-gray-700">
-                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                {device.ip_address}
+          <div className="grid grid-cols-2 gap-4 text-sm min-w-0">
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 mb-2 font-medium">NETZWERK</p>
+              <p className="font-medium text-gray-700 flex items-center min-w-0 mb-1">
+                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2 flex-shrink-0"></span>
+                <span className="truncate">{device.ip_address}</span>
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                {device.mac_address}
+              <p className="text-xs text-gray-500 flex items-center min-w-0">
+                <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2 flex-shrink-0"></span>
+                <span className="truncate">{device.mac_address}</span>
               </p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">WIFI SIGNAL</p>
-              <div className="flex items-center space-x-2">
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 mb-2 font-medium">WIFI SIGNAL</p>
+              <div className="flex items-center space-x-2 min-w-0">
                 <WifiIcon />
-                <div>
-                  <p className={`text-sm font-medium ${wifi.color}`}>
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium ${wifi.color} truncate`}>
                     {device.wifi_signal}dBm
                   </p>
-                  <p className="text-xs text-gray-500">{wifi.strength}</p>
+                  <p className="text-xs text-gray-500 truncate">{wifi.strength}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Power Metrics */}
-          <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded-lg p-3">
+          <div className="grid grid-cols-4 gap-3 bg-gray-50 rounded-lg p-4">
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">SPANNUNG</p>
-              <p className="text-sm font-bold text-gray-900">{device.voltage?.toFixed(0) || 'N/A'} V</p>
-            </div>
-            <div className="text-center border-l border-r border-gray-200">
-              <p className="text-xs text-gray-500 mb-1">STROM</p>
-              <p className="text-sm font-bold text-gray-900">{device.current?.toFixed(2) || 'N/A'} A</p>
+              <p className="text-xs text-gray-500 mb-1 font-medium">VERBRAUCH</p>
+              <p className="text-base font-bold text-blue-600">{formatEnergy(device.energy_consumption)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">GESAMT</p>
-              <p className="text-sm font-bold text-purple-600">{device.total_energy.toFixed(1)}kWh</p>
+              <p className="text-xs text-gray-500 mb-1 font-medium">SPANNUNG</p>
+              <p className="text-base font-bold text-gray-900">{device.voltage?.toFixed(0) || 'N/A'} V</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1 font-medium">STROM</p>
+              <p className="text-base font-bold text-gray-900">{device.current?.toFixed(2) || 'N/A'} A</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1 font-medium">GESAMT</p>
+              <p className="text-base font-bold text-purple-600">{device.total_energy.toFixed(1)}kWh</p>
             </div>
           </div>
 
           {/* Power Control */}
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg min-w-0">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
               <PowerIcon />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-700">Power Control</p>
-                               <p className="text-xs text-gray-500">
-                 <span className="inline-flex items-center">
-                   <ClockIcon />
-                   <span className="ml-1">{formatUptime(device.uptime)} • {device.firmware_version}</span>
-                 </span>
-               </p>
+                <p className="text-xs text-gray-500 truncate">
+                  <span className="inline-flex items-center min-w-0">
+                    <ClockIcon />
+                    <span className="ml-1 truncate">{formatUptime(device.uptime)} • {device.firmware_version}</span>
+                  </span>
+                </p>
               </div>
             </div>
             <button
               onClick={() => onTogglePower(device.device_id)}
               disabled={isLoading || device.status === 'offline'}
-              className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 ${
                 device.power_state && device.status === 'online'
                   ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg'
                   : 'bg-gray-400 text-white hover:bg-gray-500'
