@@ -25,6 +25,12 @@ model Device {
   uptime            Int      @default(0)
   voltage           Float?
   current           Float?
+  
+  // Data Logging Configuration
+  enableDataLogging Boolean  @default(true) @map("enable_data_logging")
+  dataRetentionDays Int      @default(30) @map("data_retention_days")
+  minLogInterval    Int      @default(60) @map("min_log_interval_seconds")
+  
   lastSeen          DateTime @default(now()) @map("last_seen")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
