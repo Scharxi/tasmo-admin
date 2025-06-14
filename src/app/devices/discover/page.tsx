@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DeviceDiscovery } from '@/components/device-discovery'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
 
 interface DiscoveredDevice {
   device_id: string
@@ -23,11 +24,16 @@ interface DiscoveredDevice {
 export default function DeviceDiscoveryPage() {
   const router = useRouter()
   const [isAdding, setIsAdding] = useState(false)
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   const handleDevicesSelected = async (devices: DiscoveredDevice[]) => {
     if (devices.length === 0) return
 
     setIsAdding(true)
+    setNotification(null)
     let addedCount = 0
     let failedCount = 0
 
@@ -62,25 +68,32 @@ export default function DeviceDiscoveryPage() {
         }
       }
 
-      // Show success/failure summary
+      // Show success/failure notification
       if (addedCount > 0) {
-        console.log(`${addedCount} Gerät(e) erfolgreich hinzugefügt!`)
-        alert(`${addedCount} Gerät(e) erfolgreich hinzugefügt!`)
-      }
-      if (failedCount > 0) {
-        console.error(`${failedCount} Gerät(e) konnten nicht hinzugefügt werden.`)
-        alert(`${failedCount} Gerät(e) konnten nicht hinzugefügt werden.`)
-      }
-
-      // Navigate back to devices list if any devices were added
-      if (addedCount > 0) {
+        setNotification({
+          type: 'success',
+          message: `${addedCount} Gerät(e) erfolgreich hinzugefügt! Weiterleitung zum Dashboard...`
+        })
+        
+        // Navigate to dashboard after 2 seconds
         setTimeout(() => {
-          router.push('/devices')
+          router.push('/')
         }, 2000)
       }
+      
+      if (failedCount > 0) {
+        setNotification({
+          type: 'error',
+          message: `${failedCount} Gerät(e) konnten nicht hinzugefügt werden.`
+        })
+      }
+
     } catch (error) {
       console.error('Error during device addition:', error)
-      alert('Fehler beim Hinzufügen der Geräte')
+      setNotification({
+        type: 'error',
+        message: 'Fehler beim Hinzufügen der Geräte'
+      })
     } finally {
       setIsAdding(false)
     }
@@ -103,7 +116,7 @@ export default function DeviceDiscoveryPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => router.back()}
+                  onClick={() => router.push('/')}
                   className="rounded-xl bg-gray-100 hover:bg-gray-200"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -129,6 +142,22 @@ export default function DeviceDiscoveryPage() {
         </div>
       </header>
 
+      {/* Notification Alert */}
+      {notification && (
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pb-4">
+          <Alert variant={notification.type === 'error' ? 'destructive' : 'default'}>
+            {notification.type === 'success' ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <AlertCircle className="h-4 w-4" />
+            )}
+            <AlertDescription>
+              {notification.message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-6 pb-8">
         <DeviceDiscovery 
@@ -141,7 +170,7 @@ export default function DeviceDiscoveryPage() {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white/90 p-8 rounded-2xl shadow-2xl border border-gray-200 backdrop-blur-sm">
             <div className="flex items-center gap-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
               <div>
                 <p className="font-semibold text-gray-800">Geräte werden hinzugefügt...</p>
                 <p className="text-sm text-gray-600">Bitte warten Sie einen Moment</p>
