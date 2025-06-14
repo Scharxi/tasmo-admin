@@ -86,8 +86,26 @@ export function WorkflowBuilder() {
       setWorkflowName(editingWorkflow.name)
       setWorkflowDescription(editingWorkflow.description || '')
       setWorkflowEnabled(editingWorkflow.enabled)
-      setWorkflowSteps(editingWorkflow.steps || [])
+      
+      // Transform the workflow steps to match our local format
+      const transformedSteps = editingWorkflow.steps?.map(step => ({
+        id: step.id,
+        deviceId: step.deviceId,
+        action: step.action,
+        delay: step.delay,
+        conditions: step.conditions?.map(condition => ({
+          deviceId: condition.deviceId,
+          state: condition.state
+        })) || []
+      })) || []
+      
+      setWorkflowSteps(transformedSteps)
       setShowCreateForm(true)
+      
+      console.log('Loaded workflow for editing:', {
+        name: editingWorkflow.name,
+        steps: transformedSteps
+      })
     }
   }, [editingWorkflow])
 
@@ -191,15 +209,27 @@ export function WorkflowBuilder() {
     }
 
     try {
+      // Clean and validate workflow data before sending
+      const cleanedSteps = workflowSteps.map(step => ({
+        id: step.id,
+        deviceId: step.deviceId,
+        action: step.action,
+        delay: step.delay || undefined,
+        conditions: (step.conditions || []).filter(condition => 
+          condition.deviceId && condition.state
+        )
+      }))
+
       const workflowData: CreateWorkflowData = {
-        name: workflowName,
-        description: workflowDescription,
+        name: workflowName.trim(),
+        description: workflowDescription.trim() || undefined,
         enabled: workflowEnabled,
-        steps: workflowSteps
+        steps: cleanedSteps
       }
 
       if (editingWorkflow) {
         // Update existing workflow
+        console.log('Updating workflow with data:', JSON.stringify(workflowData, null, 2))
         await updateWorkflowMutation.mutateAsync({
           id: editingWorkflow.id,
           data: workflowData
@@ -207,6 +237,7 @@ export function WorkflowBuilder() {
         setNotification({ type: 'success', message: 'Workflow erfolgreich aktualisiert!' })
       } else {
         // Create new workflow
+        console.log('Creating workflow with data:', JSON.stringify(workflowData, null, 2))
         await createWorkflowMutation.mutateAsync(workflowData)
         setNotification({ type: 'success', message: 'Workflow erfolgreich erstellt!' })
       }
@@ -221,17 +252,50 @@ export function WorkflowBuilder() {
   }
 
   const handleEditWorkflow = (workflow: Workflow) => {
+    console.log('Editing workflow:', workflow)
     setEditingWorkflow(workflow)
   }
 
   const handleExecuteWorkflow = async (workflowId: string) => {
+    const workflow = workflows.find(w => w.id === workflowId)
+    const workflowName = workflow?.name || 'Unbekannter Workflow'
+    
     try {
+      // Show executing notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowExecuting(workflowName)
+      }
+      
+      // Also show in builder alert
+      setNotification({ 
+        type: 'success', 
+        message: `⏳ Workflow "${workflowName}" wird ausgeführt...` 
+      })
+      
       const result = await executeWorkflowMutation.mutateAsync(workflowId)
-      setNotification({ type: 'success', message: result.message })
+      
+      // Show success notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowSuccess(workflowName, result.message)
+      }
+      
+      // Also show in builder alert
+      setNotification({ 
+        type: 'success', 
+        message: `✅ ${result.message || `Workflow "${workflowName}" erfolgreich ausgeführt!`}` 
+      })
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      
+      // Show error notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowError(workflowName, errorMessage)
+      }
+      
+      // Also show in builder alert
       setNotification({ 
         type: 'error', 
-        message: error instanceof Error ? error.message : 'Fehler beim Ausführen des Workflows'
+        message: `❌ Workflow "${workflowName}" fehlgeschlagen: ${errorMessage}`
       })
     }
   }
@@ -252,10 +316,13 @@ export function WorkflowBuilder() {
     }
   }
 
-  // Clear notification after 5 seconds
-  if (notification) {
-    setTimeout(() => setNotification(null), 5000)
-  }
+  // Clear notification after 7 seconds (longer for workflow messages)
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 7000)
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
@@ -352,11 +419,27 @@ export function WorkflowBuilder() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleEditWorkflow(workflow)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleExecuteWorkflow(workflow.id)}
                             disabled={!workflow.enabled || executeWorkflowMutation.isPending}
-                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            className={`transition-all duration-200 ${
+                              executeWorkflowMutation.isPending
+                                ? 'text-blue-600 border-blue-200 bg-blue-50 animate-pulse'
+                                : 'text-green-600 border-green-200 hover:bg-green-50'
+                            }`}
                           >
-                            <Play className="w-4 h-4" />
+                            {executeWorkflowMutation.isPending ? (
+                              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Play className="w-4 h-4" />
+                            )}
                           </Button>
                           <Button
                             size="sm"
