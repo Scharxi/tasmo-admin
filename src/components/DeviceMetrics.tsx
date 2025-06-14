@@ -2,8 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useDeviceMetrics } from '@/hooks/useDevices'
 import { Skeleton } from './ui/skeleton'
+import { useState, useCallback } from 'react'
 
 // Icons für Messwerte
 const VoltageIcon = () => (
@@ -30,13 +32,55 @@ const EnergyIcon = () => (
   </svg>
 )
 
+const RefreshIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  </svg>
+)
+
+const WarningIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+  </svg>
+)
+
 interface DeviceMetricsProps {
   deviceId: string
   className?: string
 }
 
+interface MetricsData {
+  power: number
+  apparent_power: number
+  reactive_power: number
+  factor: number
+  voltage: number
+  current: number
+  total: number
+  today: number
+  yesterday: number
+  has_energy_monitoring?: boolean
+  device_online?: boolean
+  last_update: string
+  message?: string
+}
+
 export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) {
-  const { data: metrics, isLoading, error, isRefetching } = useDeviceMetrics(deviceId)
+  const { data: metrics, isLoading, error, isRefetching, refetch } = useDeviceMetrics(deviceId)
+  const [isManualRefresh, setIsManualRefresh] = useState(false)
+
+  const handleManualRefresh = useCallback(async () => {
+    setIsManualRefresh(true)
+    try {
+      // Force refresh via POST to metrics endpoint
+      await fetch(`/api/devices/${deviceId}/metrics`, { method: 'POST' })
+      await refetch()
+    } catch (error) {
+      console.error('Failed to refresh metrics:', error)
+    } finally {
+      setIsManualRefresh(false)
+    }
+  }, [deviceId, refetch])
 
   if (isLoading) {
     return (
@@ -73,12 +117,37 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
       <Card className={`bg-white/90 border-red-200 shadow-sm ${className}`}>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-red-600 flex items-center gap-2">
-            <EnergyIcon />
+            <WarningIcon />
             Messwerte
+            <div className="ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={isManualRefresh}
+                className="h-6 px-2 text-xs"
+              >
+                {isManualRefresh ? (
+                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <RefreshIcon />
+                )}
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-red-500 text-sm">Fehler beim Laden der Messwerte</p>
+          <div className="text-red-500 text-sm mb-2">
+            Fehler beim Laden der Messwerte
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="text-xs"
+          >
+            Erneut versuchen
+          </Button>
         </CardContent>
       </Card>
     )
@@ -91,6 +160,21 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
           <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
             <EnergyIcon />
             Messwerte
+            <div className="ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={isManualRefresh}
+                className="h-6 px-2 text-xs"
+              >
+                {isManualRefresh ? (
+                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <RefreshIcon />
+                )}
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -108,22 +192,75 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
     })
   }
 
+  // Determine card styling based on data quality
+  const isOfflineData = metrics.device_online === false
+  const hasEnergyMonitoring = metrics.has_energy_monitoring !== false
+  const cardBorderClass = isOfflineData 
+    ? 'border-orange-200 bg-orange-50/30' 
+    : hasEnergyMonitoring 
+      ? 'border-green-200 bg-green-50/30' 
+      : 'border-gray-200 bg-gray-50/30'
+
   return (
-    <Card className={`bg-white/90 border-gray-200 shadow-sm transition-all duration-200 ${className} ${isRefetching ? 'ring-2 ring-blue-200' : ''}`}>
+    <Card className={`transition-all duration-200 shadow-sm ${className} ${cardBorderClass} ${isRefetching ? 'ring-2 ring-blue-200' : ''}`}>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+        <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
           <EnergyIcon />
           Messwerte
           <div className="ml-auto flex items-center gap-2">
-            {isRefetching && (
+            {/* Status indicator */}
+            {isOfflineData && (
+              <Badge variant="warning" className="text-xs">
+                Offline
+              </Badge>
+            )}
+            {!hasEnergyMonitoring && (
+              <Badge variant="secondary" className="text-xs">
+                Basis
+              </Badge>
+            )}
+            {hasEnergyMonitoring && !isOfflineData && (
+              <Badge variant="success" className="text-xs">
+                Live
+              </Badge>
+            )}
+            
+            {/* Refresh indicator */}
+            {(isRefetching || isManualRefresh) && (
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
             )}
+            
+            {/* Manual refresh button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isManualRefresh}
+              className="h-6 w-6 p-1 hover:bg-gray-100"
+              title="Daten aktualisieren"
+            >
+              {isManualRefresh ? (
+                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <RefreshIcon />
+              )}
+            </Button>
+            
+            {/* Timestamp */}
             <Badge variant="outline" className="text-xs">
-              {formatTime(metrics.lastUpdate)}
+              {formatTime(metrics.last_update || metrics.lastUpdate)}
             </Badge>
           </div>
         </CardTitle>
+        
+        {/* Optional message */}
+        {metrics.message && (
+          <p className="text-xs text-gray-500 mt-1">
+            {metrics.message}
+          </p>
+        )}
       </CardHeader>
+      
       <CardContent className="space-y-4">
         {/* Spannung */}
         <div className="flex items-center justify-between">
@@ -135,7 +272,7 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-gray-900">
-              {metrics.voltage.toFixed(1)}
+              {metrics.voltage?.toFixed(1) || '0.0'}
             </div>
             <div className="text-xs text-gray-500">V</div>
           </div>
@@ -151,7 +288,7 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-gray-900">
-              {metrics.current.toFixed(3)}
+              {metrics.current?.toFixed(3) || '0.000'}
             </div>
             <div className="text-xs text-gray-500">A</div>
           </div>
@@ -167,45 +304,49 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-gray-900">
-              {metrics.power.toFixed(1)}
+              {metrics.power?.toFixed(1) || '0.0'}
             </div>
             <div className="text-xs text-gray-500">W</div>
           </div>
         </div>
 
-        {/* Leistungsfaktor */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-purple-100 rounded-lg">
-              <EnergyIcon />
+        {/* Leistungsfaktor - only show if we have real energy monitoring */}
+        {hasEnergyMonitoring && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-100 rounded-lg">
+                <EnergyIcon />
+              </div>
+              <span className="text-sm font-medium text-gray-700">Faktor</span>
             </div>
-            <span className="text-sm font-medium text-gray-700">Faktor</span>
-          </div>
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900">
-              {metrics.factor.toFixed(2)}
+            <div className="text-right">
+              <div className="text-lg font-bold text-gray-900">
+                {metrics.factor?.toFixed(2) || '1.00'}
+              </div>
+              <div className="text-xs text-gray-500">cos φ</div>
             </div>
-            <div className="text-xs text-gray-500">cos φ</div>
           </div>
-        </div>
+        )}
 
-        {/* Energie heute/gestern */}
-        <div className="pt-3 border-t border-gray-100">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="text-center">
-              <div className="text-sm font-semibold text-gray-900">
-                {(metrics.today / 1000).toFixed(2)} kWh
+        {/* Energie heute/gestern - only show if meaningful */}
+        {(metrics.today > 0 || metrics.yesterday > 0 || hasEnergyMonitoring) && (
+          <div className="pt-3 border-t border-gray-100">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-900">
+                  {((metrics.today || 0) / 1000).toFixed(2)} kWh
+                </div>
+                <div className="text-xs text-gray-500">Heute</div>
               </div>
-              <div className="text-xs text-gray-500">Heute</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm font-semibold text-gray-900">
-                {(metrics.yesterday / 1000).toFixed(2)} kWh
+              <div className="text-center">
+                <div className="text-sm font-semibold text-gray-900">
+                  {((metrics.yesterday || 0) / 1000).toFixed(2)} kWh
+                </div>
+                <div className="text-xs text-gray-500">Gestern</div>
               </div>
-              <div className="text-xs text-gray-500">Gestern</div>
             </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )

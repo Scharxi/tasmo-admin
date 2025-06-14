@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
 import { TasmotaDevice } from '@/lib/api'
+import { Power } from 'lucide-react'
 
 // Modern SVG icons with enhanced styling
 const PowerIcon = () => (
@@ -134,14 +135,14 @@ export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceC
 
       <CardContent className="space-y-6 pt-0">
         {/* Power Control Section */}
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-xl">
+              <div className="p-2 bg-blue-100 rounded-lg">
                 <PowerIcon />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-700">Power Control</p>
+                <h4 className="text-sm font-semibold text-gray-700">Power Control</h4>
                 <p className="text-xs text-gray-500">Device switch</p>
               </div>
             </div>

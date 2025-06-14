@@ -22,7 +22,16 @@ export interface UpdateDeviceData {
   uptime?: number
   voltage?: number
   current?: number
+  enableDataLogging?: boolean
+  dataRetentionDays?: number
+  minLogInterval?: number
   lastSeen?: Date
+}
+
+export interface DeviceLoggingConfig {
+  enableDataLogging: boolean
+  dataRetentionDays: number
+  minLogInterval: number
 }
 
 export class DeviceService {
@@ -104,7 +113,7 @@ export class DeviceService {
     })
   }
 
-  // Add energy reading
+  // Add energy reading with intelligent storage and user configuration
   static async addEnergyReading(deviceId: string, data: {
     power: number
     energy: number
@@ -116,40 +125,171 @@ export class DeviceService {
       throw new Error('Device not found')
     }
 
-    // Create energy reading
-    const reading = await prisma.energyReading.create({
-      data: {
-        deviceId: device.id,
-        power: data.power,
-        energy: data.energy,
+    // Check if data logging is enabled for this device
+    if (!device.enableDataLogging) {
+      console.log(`Data logging disabled for device ${deviceId}, skipping historical storage`)
+      
+      // Still update current device state
+      await this.updateDevice(device.id, {
+        energyConsumption: data.power,
+        totalEnergy: data.energy,
         voltage: data.voltage,
-        current: data.current
-      }
+        current: data.current,
+        lastSeen: new Date()
+      })
+      
+      return null
+    }
+
+    // Get the last reading to avoid duplicate storage
+    const lastReading = await prisma.energyReading.findFirst({
+      where: { deviceId: device.id },
+      orderBy: { timestamp: 'desc' }
     })
 
-    // Update device with latest values
+    // Use device-specific interval setting
+    const shouldStore = !lastReading || 
+      this.shouldStoreReading(lastReading, data) ||
+      this.isTimeThresholdPassed(lastReading.timestamp, device.minLogInterval)
+
+    let reading = null
+    if (shouldStore) {
+      // Create energy reading
+      reading = await prisma.energyReading.create({
+        data: {
+          deviceId: device.id,
+          power: data.power,
+          energy: data.energy,
+          voltage: data.voltage,
+          current: data.current
+        }
+      })
+    }
+
+    // Always update device with latest values
     await this.updateDevice(device.id, {
       energyConsumption: data.power,
       totalEnergy: data.energy,
       voltage: data.voltage,
-      current: data.current
+      current: data.current,
+      lastSeen: new Date()
     })
 
     return reading
   }
 
-  // Get energy readings for device
-  static async getEnergyReadings(deviceId: string, limit = 100) {
+  // Helper: Determine if reading should be stored (avoid noise)
+  private static shouldStoreReading(lastReading: any, newData: any): boolean {
+    const powerChange = Math.abs(lastReading.power - newData.power)
+    const voltageChange = lastReading.voltage && newData.voltage ? 
+      Math.abs(lastReading.voltage - newData.voltage) : 0
+    
+    // Store if power changes by >5W or voltage by >2V
+    return powerChange > 5 || voltageChange > 2
+  }
+
+  // Helper: Check if minimum time has passed (uses device-specific interval)
+  private static isTimeThresholdPassed(lastTimestamp: Date, minInterval = 60): boolean {
+    const minIntervalMs = minInterval * 1000
+    return Date.now() - lastTimestamp.getTime() > minIntervalMs
+  }
+
+  // Get energy readings with optional aggregation
+  static async getEnergyReadings(
+    deviceId: string, 
+    options: {
+      limit?: number
+      startDate?: Date
+      endDate?: Date
+      interval?: 'raw' | 'hourly' | 'daily'
+    } = {}
+  ) {
     const device = await this.getDeviceByDeviceId(deviceId)
     if (!device) {
       throw new Error('Device not found')
     }
 
-    return await prisma.energyReading.findMany({
-      where: { deviceId: device.id },
-      orderBy: { timestamp: 'desc' },
-      take: limit
-    })
+    const { limit = 100, startDate, endDate, interval = 'raw' } = options
+
+    if (interval === 'raw') {
+      return await prisma.energyReading.findMany({
+        where: { 
+          deviceId: device.id,
+          ...(startDate && { timestamp: { gte: startDate } }),
+          ...(endDate && { timestamp: { lte: endDate } })
+        },
+        orderBy: { timestamp: 'desc' },
+        take: limit
+      })
+    }
+
+    // For aggregated data, use raw SQL for better performance
+    const intervalSql = interval === 'hourly' ? 
+      "date_trunc('hour', timestamp)" : 
+      "date_trunc('day', timestamp)"
+
+    return await prisma.$queryRaw`
+      SELECT 
+        ${intervalSql} as period,
+        AVG(power) as avg_power,
+        MIN(power) as min_power,
+        MAX(power) as max_power,
+        AVG(voltage) as avg_voltage,
+        AVG(current) as avg_current,
+        COUNT(*) as reading_count
+      FROM energy_readings 
+      WHERE device_id = ${device.id}
+        ${startDate ? `AND timestamp >= ${startDate}` : ''}
+        ${endDate ? `AND timestamp <= ${endDate}` : ''}
+      GROUP BY period
+      ORDER BY period DESC
+      LIMIT ${limit}
+    `
+  }
+
+  // Cleanup old readings (device-specific retention)
+  static async cleanupOldReadings(deviceId?: string) {
+    if (deviceId) {
+      // Cleanup for specific device using its retention settings
+      const device = await this.getDeviceByDeviceId(deviceId)
+      if (!device) {
+        throw new Error('Device not found')
+      }
+
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - device.dataRetentionDays)
+
+      const result = await prisma.energyReading.deleteMany({
+        where: {
+          deviceId: device.id,
+          timestamp: { lt: cutoffDate }
+        }
+      })
+
+      console.log(`Cleaned up ${result.count} old energy readings for device ${deviceId}`)
+      return result.count
+    } else {
+      // Global cleanup for all devices using their individual retention settings
+      const devices = await this.getAllDevices()
+      let totalDeleted = 0
+
+      for (const device of devices) {
+        const cutoffDate = new Date()
+        cutoffDate.setDate(cutoffDate.getDate() - device.dataRetentionDays)
+
+        const result = await prisma.energyReading.deleteMany({
+          where: {
+            deviceId: device.id,
+            timestamp: { lt: cutoffDate }
+          }
+        })
+
+        totalDeleted += result.count
+      }
+
+      console.log(`Global cleanup: removed ${totalDeleted} old energy readings`)
+      return totalDeleted
+    }
   }
 
   // Add device log
@@ -171,5 +311,38 @@ export class DeviceService {
         data: data.data
       }
     })
+  }
+
+  // Update device logging configuration
+  static async updateDeviceLoggingConfig(deviceId: string, config: Partial<DeviceLoggingConfig>): Promise<Device> {
+    const device = await this.getDeviceByDeviceId(deviceId)
+    if (!device) {
+      throw new Error('Device not found')
+    }
+
+    // Validate configuration
+    if (config.dataRetentionDays !== undefined && (config.dataRetentionDays < 1 || config.dataRetentionDays > 365)) {
+      throw new Error('Data retention days must be between 1 and 365')
+    }
+
+    if (config.minLogInterval !== undefined && (config.minLogInterval < 10 || config.minLogInterval > 3600)) {
+      throw new Error('Minimum log interval must be between 10 seconds and 1 hour')
+    }
+
+    return await this.updateDeviceByDeviceId(deviceId, config)
+  }
+
+  // Get device logging configuration
+  static async getDeviceLoggingConfig(deviceId: string): Promise<DeviceLoggingConfig | null> {
+    const device = await this.getDeviceByDeviceId(deviceId)
+    if (!device) {
+      return null
+    }
+
+    return {
+      enableDataLogging: device.enableDataLogging,
+      dataRetentionDays: device.dataRetentionDays,
+      minLogInterval: device.minLogInterval
+    }
   }
 } 
