@@ -26,6 +26,11 @@ model Device {
   voltage           Float?
   current           Float?
   
+  // Custom category relationship
+  categoryId        String?  @map("category_id")
+  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description       String?
+  
   // Data Logging Configuration
   enableDataLogging Boolean  @default(true) @map("enable_data_logging")
   dataRetentionDays Int      @default(30) @map("data_retention_days")
@@ -42,6 +47,22 @@ model Device {
   workflowConditions WorkflowCondition[]
 
   @@map("devices")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   // Hex color code
+  icon        String?  // Optional icon name
+  description String?
+  isDefault   Boolean  @default(false) // For system default categories
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  devices     Device[]
+
+  @@map("categories")
 }
 
 model EnergyReading {

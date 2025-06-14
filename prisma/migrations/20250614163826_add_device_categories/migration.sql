@@ -1,0 +1,7 @@
+-- CreateEnum
+CREATE TYPE "DeviceCategory" AS ENUM ('GENERAL', 'LIGHTING', 'HEATING', 'APPLIANCE_SMALL', 'APPLIANCE_LARGE', 'ELECTRONICS', 'MOTOR', 'ALWAYS_ON', 'SECURITY', 'ENTERTAINMENT');
+
+-- AlterTable
+ALTER TABLE "devices" ADD COLUMN     "category" "DeviceCategory" NOT NULL DEFAULT 'GENERAL',
+ADD COLUMN     "description" TEXT,
+ADD COLUMN     "room" TEXT;

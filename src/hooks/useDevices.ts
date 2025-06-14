@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { tasmotaAPI, TasmotaDevice } from '@/lib/api'
+import { tasmotaAPI, TasmotaDevice, DeviceCategory, CreateCategoryRequest, UpdateCategoryRequest } from '@/lib/api'
 import { useEffect } from 'react'
 
 // Query Keys für bessere Organisation
@@ -10,6 +10,12 @@ export const deviceKeys = {
   details: () => [...deviceKeys.all, 'detail'] as const,
   detail: (id: string) => [...deviceKeys.details(), id] as const,
   metrics: (id: string) => [...deviceKeys.detail(id), 'metrics'] as const,
+}
+
+export const categoryKeys = {
+  all: ['categories'] as const,
+  lists: () => [...categoryKeys.all, 'list'] as const,
+  detail: (id: string) => [...categoryKeys.all, 'detail', id] as const,
 }
 
 // Hook für alle Geräte mit automatischen Updates
@@ -183,4 +189,89 @@ export function useDeviceStateSynchronization() {
       queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
     }
   }
+}
+
+// UPDATED CATEGORY HOOKS
+
+// Hook für alle Kategorien
+export function useCategories() {
+  return useQuery({
+    queryKey: categoryKeys.lists(),
+    queryFn: () => tasmotaAPI.getCategories(),
+    refetchInterval: 30000, // Weniger häufige Updates für Kategorien
+    staleTime: 10000,
+    refetchOnWindowFocus: false,
+  })
+}
+
+// Hook für Geräte nach Kategorie
+export function useDevicesByCategory(categoryId?: string) {
+  return useQuery({
+    queryKey: [...deviceKeys.lists(), { categoryId }],
+    queryFn: () => tasmotaAPI.getDevicesByCategory(categoryId),
+    refetchInterval: 5000,
+    staleTime: 1000,
+    refetchOnWindowFocus: false,
+    refetchIntervalInBackground: true,
+  })
+}
+
+// Hook für Kategorie erstellen
+export function useCreateCategory() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (category: CreateCategoryRequest) => tasmotaAPI.createCategory(category),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() })
+    },
+  })
+}
+
+// Hook für Kategorie aktualisieren
+export function useUpdateCategory() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ categoryId, updates }: { categoryId: string; updates: UpdateCategoryRequest }) => 
+      tasmotaAPI.updateCategory(categoryId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
+    },
+  })
+}
+
+// Hook für Kategorie löschen
+export function useDeleteCategory() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (categoryId: string) => tasmotaAPI.deleteCategory(categoryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
+    },
+  })
+}
+
+// Hook für Device-Kategorie aktualisieren
+export function useUpdateDeviceCategory() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      deviceId,
+      categoryId,
+      description,
+    }: {
+      deviceId: string
+      categoryId: string
+      description?: string
+    }) => tasmotaAPI.updateDeviceCategory(deviceId, categoryId, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() })
+    },
+  })
 } 

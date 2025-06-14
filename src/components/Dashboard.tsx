@@ -1,18 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DeviceCard } from '@/components/DeviceCard'
 import { AddDeviceDialog } from '@/components/AddDeviceDialog'
-import { DeviceMetrics } from '@/components/DeviceMetrics'
-import { useDevices, useToggleDevicePower, useDashboardStats, useDeviceStateSynchronization, useDeleteDevice } from '@/hooks/useDevices'
+import { 
+  useDevices, 
+  useCategories,
+  useDashboardStats,
+  useToggleDevicePower,
+  useDeleteDevice,
+  useDeviceStateSynchronization
+} from '@/hooks/useDevices'
 import { useWorkflows, useExecuteWorkflow, useDeleteWorkflow } from '@/hooks/useWorkflows'
-import { TasmotaDevice } from '@/lib/api'
+import { TasmotaDevice, DeviceCategory } from '@/lib/api'
 import Link from 'next/link'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, AlertTriangle, Play, Edit, Trash2, Settings as SettingsLucide, Zap } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Grid, List, Filter, Palette } from 'lucide-react'
+
 
 // Modern SVG Icons with better styling
 const HomeIcon = () => (
@@ -59,16 +65,21 @@ const SettingsIcon = () => (
   </svg>
 )
 
+type ViewMode = 'categories' | 'grid'
+
 export function Dashboard() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('categories')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [notification, setNotification] = useState<{
     type: 'success' | 'error'
     message: string
   } | null>(null)
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   
   // Tanstack Query Hooks
-  const { data: devices = [], isLoading: loading, isRefetching: refreshing, dataUpdatedAt } = useDevices()
+  const { data: devices = [], isLoading: devicesLoading, dataUpdatedAt, isRefetching: refreshing } = useDevices()
   const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows()
   const executeWorkflowMutation = useExecuteWorkflow()
   const deleteWorkflowMutation = useDeleteWorkflow()
@@ -76,6 +87,9 @@ export function Dashboard() {
   const deleteDeviceMutation = useDeleteDevice()
   const stats = useDashboardStats()
   const { forceRefresh } = useDeviceStateSynchronization()
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories()
+
+
 
   const handleTogglePower = async (deviceId: string) => {
     setSelectedDevice(deviceId)
@@ -95,7 +109,7 @@ export function Dashboard() {
   }
 
   const handleExecuteWorkflow = async (workflowId: string) => {
-    const workflow = workflows.find(w => w.id === workflowId)
+    const workflow = workflows.find((w: any) => w.id === workflowId)
     const workflowName = workflow?.name || 'Unbekannter Workflow'
     
     try {
@@ -178,6 +192,34 @@ export function Dashboard() {
 
   const lastUpdate = new Date(dataUpdatedAt)
 
+  // Categorize devices
+  const devicesByCategory = useMemo(() => {
+    const categorized: Record<string, TasmotaDevice[]> = {}
+    const uncategorized: TasmotaDevice[] = []
+    
+    devices.forEach(device => {
+      if (device.category?.id) {
+        if (!categorized[device.category.id]) {
+          categorized[device.category.id] = []
+        }
+        categorized[device.category.id].push(device)
+      } else {
+        uncategorized.push(device)
+      }
+    })
+    
+    return { categorized, uncategorized }
+  }, [devices])
+
+  // Filter devices based on selected category
+  const filteredDevices = useMemo(() => {
+    if (!selectedCategoryId) return devices
+    if (selectedCategoryId === 'uncategorized') return devicesByCategory.uncategorized
+    return devicesByCategory.categorized[selectedCategoryId] || []
+  }, [devices, selectedCategoryId, devicesByCategory])
+
+
+
   // Clear notification after 7 seconds (longer for workflow messages)
   useEffect(() => {
     if (notification) {
@@ -186,48 +228,10 @@ export function Dashboard() {
     }
   }, [notification])
 
-  if (loading) {
+  if (devicesLoading || categoriesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-8">
-            {/* Header Skeleton */}
-            <div className="bg-white/80 rounded-2xl p-8 border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl"></div>
-                  <div className="space-y-2">
-                    <div className="h-8 w-48 bg-gray-200 rounded-lg"></div>
-                    <div className="h-4 w-32 bg-gray-150 rounded-lg"></div>
-                  </div>
-                </div>
-                <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
-              </div>
-            </div>
-            
-            {/* Stats Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white/80 rounded-2xl p-6 border border-gray-200 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-3">
-                      <div className="h-4 w-20 bg-gray-200 rounded"></div>
-                      <div className="h-8 w-16 bg-gray-250 rounded"></div>
-                    </div>
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Devices Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white/80 rounded-2xl p-6 border border-gray-200 shadow-sm h-80"></div>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Laden...</div>
       </div>
     )
   }
@@ -313,344 +317,460 @@ export function Dashboard() {
       )}
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 space-y-8">
-        {/* Optimized Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {/* Total Devices */}
-          <Card className="group bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Total Devices
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-2.5 text-white shadow-lg mt-2">
-                    <DevicesIcon />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                    {stats.totalDevices}
-                  </p>
-                  <p className="text-sm text-blue-600 font-medium mt-1">Connected nodes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Smart Home Dashboard</h1>
+            <p className="text-gray-600">Verwalten Sie Ihre Tasmota-Geräte nach Kategorien</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Gerät hinzufügen
+            </Button>
+            <Link href="/settings/categories">
+              <Button variant="outline" className="gap-2">
+                <Palette className="h-4 w-4" />
+                Kategorien verwalten
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-          {/* Online Devices */}
-          <Card className="group bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Online
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl p-2.5 text-white shadow-lg mt-2">
-                    <div className="w-full h-full bg-emerald-200 rounded-full"></div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold bg-gradient-to-br from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
-                    {stats.onlineDevices}
-                  </p>
-                  <p className="text-sm text-emerald-600 font-medium mt-1">Connected now</p>
-                </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Geräte Gesamt</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalDevices}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Devices */}
-          <Card className="group bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Active
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl p-2.5 text-white shadow-lg mt-2">
-                    <ActivityIcon />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold bg-gradient-to-br from-orange-600 to-orange-800 bg-clip-text text-transparent">
-                    {stats.activeDevices}
-                  </p>
-                  <p className="text-sm text-orange-600 font-medium mt-1">Powered on</p>
-                </div>
+              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <SettingsIcon />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Power */}
-          <Card className="group bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      Total Power
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl p-2.5 text-white shadow-lg mt-2">
-                    <EnergyIcon />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold bg-gradient-to-br from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                    {stats.totalConsumption.toFixed(1)}W
-                  </p>
-                  <p className="text-sm text-purple-600 font-medium mt-1">Current draw</p>
-                </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Online</p>
+                <p className="text-2xl font-bold text-green-600">{stats.onlineDevices}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                <div className="h-3 w-3 bg-green-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Aktiv</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.activeDevices}</p>
+              </div>
+              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <div className="h-3 w-3 bg-orange-500 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Verbrauch</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.totalConsumption.toFixed(1)}W</p>
+              </div>
+              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <EnergyIcon />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Workflows Section */}
-        <div className="space-y-6 pt-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-800 to-purple-600 bg-clip-text text-transparent">
-                Workflows
-              </h2>
-              <p className="text-gray-600 mt-1">Automatisierte Geräte-Sequenzen verwalten</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Badge variant="outline" className="px-3 py-1 font-medium border-purple-300 text-purple-700">
-                {workflows.length} Workflows
-              </Badge>
-              <Badge variant="success" className="px-3 py-1 font-medium">
-                {workflows.filter(w => w.enabled).length} aktiv
-              </Badge>
-              <Link href="/workflows">
-                <Button
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
-                >
-                  <SettingsLucide className="w-4 h-4 mr-2" />
-                  Workflows verwalten
-                </Button>
-              </Link>
-            </div>
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200/50 p-4 relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-3">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-l from-purple-300 to-blue-300 rounded-full transform translate-x-10 -translate-y-10"></div>
           </div>
-
-          {workflowsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <Card key={i} className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg">
-                  <CardContent className="p-6">
-                    <div className="space-y-3">
-                      <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-                      <div className="h-4 bg-gray-150 rounded animate-pulse"></div>
-                      <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : workflows.length === 0 ? (
-            <Card className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg">
-              <CardContent className="p-16 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl p-4 mx-auto mb-6">
-                  <Zap className="w-full h-full text-purple-500" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12l-7.5 7.5M3 12h18" />
+                  </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Keine Workflows erstellt
-                </h3>
-                <p className="text-gray-600 max-w-md mx-auto mb-6">
-                  Erstellen Sie automatisierte Sequenzen für Ihre Geräte, um komplexe Abläufe zu vereinfachen.
-                </p>
+                <div>
+                  <h2 className="text-lg font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent">
+                    Workflows
+                  </h2>
+                  <p className="text-xs text-gray-600">Automatisierte Aktionen für Ihre Geräte</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
                 <Link href="/workflows">
-                  <Button className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white">
-                    <Zap className="w-4 h-4 mr-2" />
-                    Ersten Workflow erstellen
+                  <Button 
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                    size="sm"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Erstellen
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {workflows.slice(0, 6).map((workflow) => (
-                <Card key={workflow.id} className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
-                  <CardContent className="p-0">
-                    {/* Header Section */}
-                    <div className="p-6 pb-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-2.5 text-white shadow-lg">
-                            <Zap className="w-full h-full" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-lg leading-tight">
-                              {workflow.name}
-                            </h3>
-                            <Badge 
-                              variant={workflow.enabled ? "default" : "secondary"} 
-                              className={`mt-1 text-xs font-medium ${
-                                workflow.enabled 
-                                  ? 'bg-green-500 text-white border-green-500 hover:bg-green-600' 
-                                  : 'bg-gray-100 text-gray-600 border-gray-300'
-                              }`}
-                            >
-                              {workflow.enabled ? 'Aktiv' : 'Inaktiv'}
-                            </Badge>
-                          </div>
+                {workflows.length > 0 && (
+                  <Link href="/workflows">
+                    <Button variant="outline" size="sm" className="border-purple-200 text-purple-700 hover:bg-purple-50">
+                      Verwalten
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+            
+            {workflows.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {workflows.slice(0, 4).map((workflow: any) => (
+                    <div
+                      key={workflow.id}
+                      className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-lg p-3 hover:shadow-md hover:bg-white/90 transition-all duration-200 group"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-blue-400 rounded-md flex items-center justify-center text-white text-xs font-bold">
+                          W
                         </div>
+                        <h3 className="font-medium text-gray-900 group-hover:text-purple-700 transition-colors text-sm truncate">
+                          {workflow.name}
+                        </h3>
                       </div>
                       
-                      {workflow.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                          {workflow.description}
-                        </p>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-                          <span>{workflow.steps?.length || 0} Schritt{(workflow.steps?.length || 0) !== 1 ? 'e' : ''}</span>
-                        </div>
-                        <span>{new Date(workflow.createdAt).toLocaleDateString('de-DE')}</span>
+                      <div className="flex items-center gap-2 text-xs mb-3">
+                        <span className="text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-medium">
+                          {workflow.steps ? new Set(workflow.steps.map((step: any) => step.deviceId)).size : 0} Geräte
+                        </span>
+                        <span className="text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                          {workflow.steps?.length || 0} Aktionen
+                        </span>
                       </div>
-                    </div>
-                    
-                    {/* Action Section */}
-                    <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                      
                       <div className="flex items-center gap-2">
-                                              <Button
-                        size="sm"
-                        onClick={() => handleExecuteWorkflow(workflow.id)}
-                        disabled={!workflow.enabled || executeWorkflowMutation.isPending}
-                        className={`flex-1 text-white border-0 shadow-sm transition-all duration-200 ${
-                          executeWorkflowMutation.isPending
-                            ? 'bg-blue-500 hover:bg-blue-600 animate-pulse'
-                            : 'bg-green-500 hover:bg-green-600'
-                        }`}
-                      >
-                        {executeWorkflowMutation.isPending ? (
-                          <>
-                            <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Läuft...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            Ausführen
-                          </>
-                        )}
-                      </Button>
-                        <Link href={`/workflows?edit=${workflow.id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="p-2 text-blue-600 border-blue-200 hover:bg-blue-50"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                        <Button
+                          size="sm"
+                          onClick={() => handleExecuteWorkflow(workflow.id)}
+                          disabled={executeWorkflowMutation.isPending}
+                          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white text-xs h-8"
+                        >
+                          {executeWorkflowMutation.isPending ? (
+                            <>
+                              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-1" />
+                              Läuft...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+                              </svg>
+                              Start
+                            </>
+                          )}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteWorkflow(workflow.id)}
                           disabled={deleteWorkflowMutation.isPending}
-                          className="p-2 text-red-600 border-red-200 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-8 w-10 p-0 flex items-center justify-center"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {workflows.length > 6 && (
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center min-h-[200px]">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg p-2 text-white mb-3">
-                      <SettingsLucide className="w-full h-full" />
-                    </div>
-                    <h3 className="font-semibold text-purple-900 mb-2">
-                      {workflows.length - 6} weitere Workflows
-                    </h3>
-                    <p className="text-sm text-purple-700 mb-4">
-                      Alle Workflows anzeigen und verwalten
-                    </p>
+                  ))}
+                </div>
+                
+                {workflows.length > 4 && (
+                  <div className="mt-3 text-center">
                     <Link href="/workflows">
-                      <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
-                        Alle anzeigen
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50 text-xs"
+                      >
+                        +{workflows.length - 4} weitere anzeigen
                       </Button>
                     </Link>
-                  </CardContent>
-                </Card>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12l-7.5 7.5M3 12h18" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Keine Workflows</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Erstellen Sie Workflows für automatisierte Aktionen
+                </p>
+                <Link href="/workflows">
+                  <Button 
+                    size="sm"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Erstellen
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* View Mode Toggle and Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'categories' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('categories')}
+              className="gap-2"
+            >
+              <Grid className="h-4 w-4" />
+              Kategorien
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              Liste
+            </Button>
+          </div>
+          
+          {viewMode === 'grid' && (
+            <div className="flex items-center gap-3">
+              {/* Custom Styled Dropdown */}
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                  className="justify-between min-w-48 bg-white"
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <span>
+                      {selectedCategoryId === null 
+                        ? `Alle Geräte (${devices.length})`
+                        : selectedCategoryId === 'uncategorized'
+                        ? `Ohne Kategorie (${devicesByCategory.uncategorized.length})`
+                        : `${categories.find(cat => cat.id === selectedCategoryId)?.name} (${devicesByCategory.categorized[selectedCategoryId]?.length || 0})`
+                      }
+                    </span>
+                  </div>
+                  <svg 
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showCategoryDropdown ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </Button>
+                
+                {showCategoryDropdown && (
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowCategoryDropdown(false)}
+                    />
+                    
+                    {/* Dropdown Menu */}
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1 max-h-64 overflow-y-auto">
+                      {/* All Devices Option */}
+                      <button
+                        onClick={() => {
+                          setSelectedCategoryId(null)
+                          setShowCategoryDropdown(false)
+                        }}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 ${
+                          selectedCategoryId === null ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="w-3 h-3 rounded-full bg-gray-300" />
+                        <span>Alle Geräte ({devices.length})</span>
+                      </button>
+                      
+                      {/* Categories with devices */}
+                      {categories
+                        .filter(category => (devicesByCategory.categorized[category.id]?.length || 0) > 0)
+                        .map(category => (
+                          <button
+                            key={category.id}
+                            onClick={() => {
+                              setSelectedCategoryId(category.id)
+                              setShowCategoryDropdown(false)
+                            }}
+                            className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 ${
+                              selectedCategoryId === category.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            }`}
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full border border-gray-300"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            <span>{category.name} ({devicesByCategory.categorized[category.id]?.length || 0})</span>
+                          </button>
+                        ))}
+                      
+                      {/* Uncategorized devices */}
+                      {devicesByCategory.uncategorized.length > 0 && (
+                        <>
+                          <div className="border-t border-gray-100 my-1" />
+                          <button
+                            onClick={() => {
+                              setSelectedCategoryId('uncategorized')
+                              setShowCategoryDropdown(false)
+                            }}
+                            className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 ${
+                              selectedCategoryId === 'uncategorized' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            }`}
+                          >
+                            <div className="w-3 h-3 rounded-full bg-gray-400" />
+                            <span>Ohne Kategorie ({devicesByCategory.uncategorized.length})</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              {/* Category indicator with color */}
+              {selectedCategoryId && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border border-gray-200 rounded-full">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ 
+                        backgroundColor: selectedCategoryId === 'uncategorized' 
+                          ? '#6B7280' 
+                          : categories.find(cat => cat.id === selectedCategoryId)?.color 
+                      }}
+                    />
+                    <span className="text-sm text-gray-700">
+                      {selectedCategoryId === 'uncategorized' 
+                        ? 'Ohne Kategorie' 
+                        : categories.find(cat => cat.id === selectedCategoryId)?.name
+                      }
+                    </span>
+                    <button
+                      onClick={() => setSelectedCategoryId(null)}
+                      className="text-gray-400 hover:text-gray-600 ml-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Devices Section */}
-        <div className="space-y-6 pb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                Connected Devices
-              </h2>
-              <p className="text-gray-600 mt-1">Manage your smart home ecosystem</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Badge variant="outline" className="px-3 py-1 font-medium border-gray-300 text-gray-700">
-                {devices.length} devices
-              </Badge>
-              <Badge variant="success" className="px-3 py-1 font-medium">
-                {stats.onlineDevices} online
-              </Badge>
-              <Link href="/devices/discover">
-                <Button
-                  variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                  </svg>
-                  Discovery
-                </Button>
-              </Link>
-              <Button
-                onClick={() => setShowAddDialog(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Add Device
-              </Button>
-            </div>
-          </div>
-
-          {devices.length === 0 ? (
-            <Card className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg">
-              <CardContent className="p-16 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-4 mx-auto mb-6">
-                  <DevicesIcon />
+        {/* Content */}
+        {viewMode === 'categories' ? (
+          <div className="space-y-8">
+            {/* Categorized Devices */}
+            {categories.map(category => {
+              const categoryDevices = devicesByCategory.categorized[category.id] || []
+              if (categoryDevices.length === 0) return null
+              
+              return (
+                <div key={category.id} className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-4 h-4 rounded-full border border-gray-300"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
+                    <Badge variant="secondary" className="text-xs">
+                      {categoryDevices.length} Gerät{categoryDevices.length !== 1 ? 'e' : ''}
+                    </Badge>
+                    {category.description && (
+                      <p className="text-sm text-gray-500">- {category.description}</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categoryDevices.map(device => (
+                      <DeviceCard
+                        key={device.device_id}
+                        device={device}
+                        onTogglePower={handleTogglePower}
+                        onDeleteDevice={handleDeleteDevice}
+                        isLoading={selectedDevice === device.device_id}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  No devices detected
-                </h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Make sure your Tasmota devices are connected to the network and configured properly.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
+              )
+            })}
+
+            {/* Uncategorized Devices */}
+            {devicesByCategory.uncategorized.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full bg-gray-400 border border-gray-300" />
+                  <h2 className="text-lg font-semibold text-gray-900">Ohne Kategorie</h2>
+                  <Badge variant="secondary" className="text-xs">
+                    {devicesByCategory.uncategorized.length} Gerät{devicesByCategory.uncategorized.length !== 1 ? 'e' : ''}
+                  </Badge>
+                  <p className="text-sm text-gray-500">- Geräte ohne zugewiesene Kategorie</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {devicesByCategory.uncategorized.map(device => (
+                    <DeviceCard
+                      key={device.device_id}
+                      device={device}
+                      onTogglePower={handleTogglePower}
+                      onDeleteDevice={handleDeleteDevice}
+                      isLoading={selectedDevice === device.device_id}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {devices.length === 0 && (
+              <div className="text-center py-12">
+                <div className="h-12 w-12 text-gray-300 mx-auto mb-4">
+                  <SettingsIcon />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Geräte gefunden</h3>
+                <p className="text-gray-500">Fügen Sie Ihre ersten Tasmota-Geräte hinzu, um loszulegen.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {devices.map((device) => (
+              {filteredDevices.map(device => (
                 <DeviceCard
                   key={device.device_id}
                   device={device}
@@ -660,8 +780,21 @@ export function Dashboard() {
                 />
               ))}
             </div>
-          )}
-        </div>
+            
+            {filteredDevices.length === 0 && (
+              <div className="text-center py-12">
+                <Filter className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Geräte in dieser Kategorie</h3>
+                <p className="text-gray-500">
+                  {selectedCategoryId 
+                    ? 'Wählen Sie eine andere Kategorie oder fügen Sie Geräte zu dieser Kategorie hinzu.'
+                    : 'Keine Geräte verfügbar.'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Add Device Dialog */}
