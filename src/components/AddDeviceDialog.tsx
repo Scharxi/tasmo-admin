@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle, CheckCircle, Search } from 'lucide-react'
 import { tasmotaAPI, CreateDeviceRequest, TasmotaDevice } from '@/lib/api'
 
 const PlusIcon = () => (
@@ -18,12 +21,6 @@ const DeviceIcon = () => (
   </svg>
 )
 
-const SearchIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-  </svg>
-)
-
 interface AddDeviceDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -31,12 +28,14 @@ interface AddDeviceDialogProps {
 }
 
 export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDialogProps) {
+  const router = useRouter()
   const [ipAddress, setIpAddress] = useState('')
   const [deviceInfo, setDeviceInfo] = useState<TasmotaDevice | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
   const [isDiscovering, setIsDiscovering] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [discoveredDevices, setDiscoveredDevices] = useState<any[]>([])
 
   const handleFetchDeviceInfo = async () => {
@@ -47,11 +46,13 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
 
     setIsFetching(true)
     setError(null)
+    setSuccess(null)
     setDeviceInfo(null)
 
     try {
       const info = await tasmotaAPI.fetchDeviceInfo(ipAddress.trim())
       setDeviceInfo(info)
+      setSuccess('Device information fetched successfully!')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to fetch device information')
     } finally {
@@ -69,11 +70,19 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
 
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       await tasmotaAPI.createDevice({ ipAddress: deviceInfo.ip_address })
-      onDeviceAdded()
-      onClose()
+      setSuccess('Device added successfully! Redirecting to dashboard...')
+      
+      // Navigate to dashboard after success
+      setTimeout(() => {
+        onDeviceAdded()
+        onClose()
+        router.push('/')
+      }, 2000)
+      
       // Reset form
       setIpAddress('')
       setDeviceInfo(null)
@@ -87,10 +96,16 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
   const handleDiscover = async () => {
     setIsDiscovering(true)
     setError(null)
+    setSuccess(null)
 
     try {
       const devices = await tasmotaAPI.discoverDevices()
       setDiscoveredDevices(devices)
+      if (devices.length > 0) {
+        setSuccess(`Found ${devices.length} device(s)!`)
+      } else {
+        setError('No devices found. Make sure devices are on the same network.')
+      }
     } catch (error) {
       setError('Failed to discover devices. Make sure devices are on the same network.')
     } finally {
@@ -102,12 +117,14 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
     setIpAddress(device.ip_address)
     setDeviceInfo(device)
     setDiscoveredDevices([])
+    setSuccess('Device selected from discovery!')
   }
 
   const resetForm = () => {
     setIpAddress('')
     setDeviceInfo(null)
     setError(null)
+    setSuccess(null)
     setDiscoveredDevices([])
   }
 
@@ -148,6 +165,26 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Success Alert */}
+          {success && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                {success}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-red-700">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Device Discovery Section */}
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
             <div className="flex items-center justify-between mb-3">
@@ -163,7 +200,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                 {isDiscovering ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                 ) : (
-                  <SearchIcon />
+                  <Search className="w-4 h-4 mr-2" />
                 )}
                 {isDiscovering ? 'Scanning...' : 'Discover'}
               </Button>
@@ -209,6 +246,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                     onChange={(e) => {
                       setIpAddress(e.target.value)
                       setError(null)
+                      setSuccess(null)
                       setDeviceInfo(null)
                     }}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -264,12 +302,6 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                       </Badge>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-700">{error}</p>
                 </div>
               )}
 

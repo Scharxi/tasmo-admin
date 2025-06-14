@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button'
 import { DeviceCard } from '@/components/DeviceCard'
 import { AddDeviceDialog } from '@/components/AddDeviceDialog'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
-import { useDevices, useToggleDevicePower, useDashboardStats, useDeviceStateSynchronization } from '@/hooks/useDevices'
+import { useDevices, useToggleDevicePower, useDashboardStats, useDeviceStateSynchronization, useDeleteDevice } from '@/hooks/useDevices'
 import { TasmotaDevice } from '@/lib/api'
 import Link from 'next/link'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CheckCircle, AlertTriangle } from 'lucide-react'
 
 // Modern SVG Icons with better styling
 const HomeIcon = () => (
@@ -59,10 +61,15 @@ const SettingsIcon = () => (
 export function Dashboard() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
   
   // Tanstack Query Hooks
   const { data: devices = [], isLoading: loading, isRefetching: refreshing, dataUpdatedAt } = useDevices()
   const togglePowerMutation = useToggleDevicePower()
+  const deleteDeviceMutation = useDeleteDevice()
   const stats = useDashboardStats()
   const { forceRefresh } = useDeviceStateSynchronization()
 
@@ -72,8 +79,31 @@ export function Dashboard() {
       const result = await togglePowerMutation.mutateAsync(deviceId)
     } catch (error) {
       console.error('Failed to toggle device power:', error)
+      setNotification({
+        type: 'error',
+        message: 'Failed to toggle device power'
+      })
     } finally {
       setSelectedDevice(null)
+    }
+  }
+
+  const handleDeleteDevice = async (deviceId: string) => {
+    try {
+      await deleteDeviceMutation.mutateAsync(deviceId)
+      
+      // Show success message
+      setNotification({
+        type: 'success',
+        message: 'Gerät erfolgreich entfernt!'
+      })
+      
+      // Clear notification after 3 seconds
+      setTimeout(() => setNotification(null), 3000)
+      
+    } catch (error) {
+      console.error('Failed to delete device:', error)
+      throw error // Re-throw for DeviceCard to handle
     }
   }
 
@@ -188,6 +218,22 @@ export function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* Notification Alert */}
+      {notification && (
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pb-4">
+          <Alert variant={notification.type === 'error' ? 'destructive' : 'default'} className={notification.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
+            {notification.type === 'success' ? (
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            <AlertDescription className={notification.type === 'error' ? 'text-red-700' : 'text-green-700'}>
+              {notification.message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 space-y-8">
         {/* Optimized Stats Cards */}
@@ -309,6 +355,17 @@ export function Dashboard() {
               <Badge variant="success" className="px-3 py-1 font-medium">
                 {stats.onlineDevices} online
               </Badge>
+              <Link href="/devices/discover">
+                <Button
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                  Discovery
+                </Button>
+              </Link>
               <Button
                 onClick={() => setShowAddDialog(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -342,6 +399,7 @@ export function Dashboard() {
                   key={device.device_id}
                   device={device}
                   onTogglePower={handleTogglePower}
+                  onDeleteDevice={handleDeleteDevice}
                   isLoading={selectedDevice === device.device_id}
                 />
               ))}

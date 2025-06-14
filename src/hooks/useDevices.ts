@@ -91,10 +91,6 @@ export function useToggleDevicePower() {
         queryClient.setQueryData(deviceKeys.lists(), context.previousDevices)
       }
     },
-    onSettled: (data, error, deviceId) => {
-      // Immediate refresh to ensure we have the latest state
-      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
-    },
   })
 }
 
@@ -106,6 +102,30 @@ export function useAddDevice() {
     mutationFn: (data: any) => tasmotaAPI.addDevice(data),
     onSuccess: () => {
       // Invalidate und refetch devices nach dem Hinzufügen
+      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
+    },
+  })
+}
+
+// Hook für Gerät löschen
+export function useDeleteDevice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (deviceId: string) => {
+      const response = await fetch(`/api/devices/${deviceId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete device')
+      }
+
+      return await response.json()
+    },
+    onSuccess: () => {
+      // Invalidate und refetch devices nach dem Löschen
       queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
     },
   })

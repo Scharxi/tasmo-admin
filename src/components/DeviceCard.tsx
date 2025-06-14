@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
 import { TasmotaDevice } from '@/lib/api'
-import { Power } from 'lucide-react'
+import { Power, Trash2, AlertTriangle, CheckCircle, Wifi } from 'lucide-react'
 
 // Modern SVG icons with enhanced styling
 const PowerIcon = () => (
@@ -51,11 +52,16 @@ const ChipIcon = () => (
 interface DeviceCardProps {
   device: TasmotaDevice
   onTogglePower: (deviceId: string) => void
+  onDeleteDevice: (deviceId: string) => Promise<void>
   isLoading?: boolean
 }
 
-export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceCardProps) {
+export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = false }: DeviceCardProps) {
   const [showMetrics, setShowMetrics] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  
   const formatEnergy = (watts: number): string => {
     if (watts >= 1000) {
       return `${(watts / 1000).toFixed(1)}kW`
@@ -95,163 +101,253 @@ export function DeviceCard({ device, onTogglePower, isLoading = false }: DeviceC
 
   const wifi = getWifiStrength(device.wifi_signal)
 
+  const handleDeleteDevice = async () => {
+    setIsDeleting(true)
+    setDeleteError(null)
+    
+    try {
+      await onDeleteDevice(device.device_id)
+      setShowDeleteConfirm(false)
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete device')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
-    <Card className={`bg-white/95 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200 ${
-      device.power_state && device.status === 'online' 
-        ? 'ring-2 ring-emerald-200' 
-        : ''
-    }`}>
-      {/* Status Indicator Bar */}
-      <div className={`h-1 bg-gradient-to-r ${
-        device.status === 'offline' 
-          ? 'from-red-400 to-red-600' 
-          : device.power_state
-            ? 'from-emerald-400 to-green-500'
-            : 'from-amber-400 to-orange-500'
-      }`} />
+    <>
+      <Card className={`bg-white/95 rounded-xl border shadow-md hover:shadow-lg transition-all duration-200 ${
+        device.power_state && device.status === 'online' 
+          ? 'border-emerald-300 bg-emerald-50/30' 
+          : 'border-gray-200'
+      }`}>
+        {/* Status Indicator Bar */}
+        <div className={`h-1 bg-gradient-to-r ${
+          device.status === 'offline' 
+            ? 'from-red-400 to-red-600' 
+            : device.power_state
+              ? 'from-emerald-400 to-green-500'
+              : 'from-amber-400 to-orange-500'
+        }`} />
 
-      <CardHeader className="pb-4 pt-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`p-3 rounded-2xl ${
-              device.power_state && device.status === 'online' 
-                ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg' 
-                : 'bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-lg'
-            }`}>
-              <PlugIcon />
-            </div>
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-lg font-bold text-gray-800 truncate">
-                {device.device_name}
-              </CardTitle>
-              <p className="text-sm text-gray-500 font-medium">{device.ip_address}</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-end space-y-2">
-            {getStatusBadge()}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6 pt-0">
-        {/* Power Control Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+        <CardHeader className="pb-3 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <PowerIcon />
+              <div className={`p-2 rounded-lg ${
+                device.power_state && device.status === 'online' 
+                  ? 'bg-emerald-500 text-white' 
+                  : 'bg-gray-400 text-white'
+              }`}>
+                <PlugIcon />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-gray-700">Power Control</h4>
-                <p className="text-xs text-gray-500">Device switch</p>
+                <CardTitle className="text-base font-semibold text-gray-800">
+                  {device.device_name}
+                </CardTitle>
+                <p className="text-xs text-gray-500">ID: {device.device_id}</p>
               </div>
             </div>
-            {/* Prominent Power Button */}
+            <div className="flex flex-col items-end space-y-1">
+              <div className="flex items-center space-x-2">
+                {getStatusBadge()}
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="h-8 w-8 p-1 border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-md transition-colors duration-200 flex items-center justify-center"
+                  title="Gerät entfernen"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-gray-900">
+                  {formatEnergy(device.energy_consumption)}
+                </div>
+                <div className="text-xs text-gray-500">Verbrauch</div>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4 pt-0">
+          {/* Network Info */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">NETZWERK</p>
+              <p className="font-medium text-gray-700">
+                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                {device.ip_address}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                {device.mac_address}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">WIFI SIGNAL</p>
+              <div className="flex items-center space-x-2">
+                <WifiIcon />
+                <div>
+                  <p className={`text-sm font-medium ${wifi.color}`}>
+                    {device.wifi_signal}dBm
+                  </p>
+                  <p className="text-xs text-gray-500">{wifi.strength}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Power Metrics */}
+          <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded-lg p-3">
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">SPANNUNG</p>
+              <p className="text-sm font-bold text-gray-900">{device.voltage?.toFixed(0) || 'N/A'} V</p>
+            </div>
+            <div className="text-center border-l border-r border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">STROM</p>
+              <p className="text-sm font-bold text-gray-900">{device.current?.toFixed(2) || 'N/A'} A</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">GESAMT</p>
+              <p className="text-sm font-bold text-purple-600">{device.total_energy.toFixed(1)}kWh</p>
+            </div>
+          </div>
+
+          {/* Power Control */}
+          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <PowerIcon />
+              <div>
+                <p className="text-sm font-medium text-gray-700">Power Control</p>
+                               <p className="text-xs text-gray-500">
+                 <span className="inline-flex items-center">
+                   <ClockIcon />
+                   <span className="ml-1">{formatUptime(device.uptime)} • {device.firmware_version}</span>
+                 </span>
+               </p>
+              </div>
+            </div>
             <button
               onClick={() => onTogglePower(device.device_id)}
               disabled={isLoading || device.status === 'offline'}
-              className={`relative p-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 device.power_state && device.status === 'online'
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 hover:scale-105'
-                  : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 hover:scale-105'
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                  : 'bg-gray-400 text-white hover:bg-gray-500'
               } ${isLoading ? 'animate-pulse' : ''}`}
-              title={device.power_state ? 'Turn Off' : 'Turn On'}
+              title={device.power_state ? 'Ausschalten' : 'Einschalten'}
             >
               <PowerButtonIcon />
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
             </button>
           </div>
-        </div>
 
-        {/* Energy Consumption */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Draw</p>
-              <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {formatEnergy(device.energy_consumption)}
-              </p>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div 
-                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min((device.energy_consumption / 100) * 100, 100)}%` }}
-                />
+          {/* Metrics Toggle */}
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMetrics(!showMetrics)}
+              className="text-xs text-gray-500 hover:text-gray-700"
+              disabled={device.status === 'offline'}
+            >
+              {showMetrics ? 'Weniger anzeigen' : 'Detaillierte Messwerte'}
+            </Button>
+          </div>
+
+          {/* Detailed Metrics Panel */}
+          {showMetrics && (
+            <div className="border-t border-gray-100 pt-3">
+              <DeviceMetrics 
+                deviceId={device.device_id} 
+                className=""
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md bg-white rounded-xl shadow-2xl">
+            <CardHeader className="pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-gray-800">
+                    Gerät entfernen
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Diese Aktion kann nicht rückgängig gemacht werden
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Used</p>
-              <p className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                {device.total_energy.toFixed(1)} kWh
-              </p>
-              <p className="text-xs text-purple-600 font-medium">Lifetime consumption</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Technical Details */}
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
-            <ChipIcon />
-            <span>Device Information</span>
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center space-x-2">
-              <WifiIcon />
-              <div>
-                <p className="text-xs text-gray-500">WiFi Signal</p>
-                <p className={`text-sm font-semibold ${wifi.color}`}>
-                  {wifi.strength} ({device.wifi_signal}dBm)
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {deleteError && (
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-red-700">
+                    {deleteError}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Gerätename:</strong> {device.device_name}
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Geräte-ID:</strong> {device.device_id}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <strong>IP-Adresse:</strong> {device.ip_address}
                 </p>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <ClockIcon />
-              <div>
-                <p className="text-xs text-gray-500">Uptime</p>
-                <p className="text-sm font-semibold text-gray-700">
-                  {formatUptime(device.uptime)}
-                </p>
+              
+              <p className="text-sm text-gray-600">
+                Das Gerät wird aus dem System entfernt. Alle gespeicherten Daten und Metriken 
+                zu diesem Gerät werden dauerhaft gelöscht.
+              </p>
+              
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setDeleteError(null)
+                  }}
+                  disabled={isDeleting}
+                  className="px-4"
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={handleDeleteDevice}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Entfernen...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Endgültig entfernen
+                    </>
+                  )}
+                </Button>
               </div>
-            </div>
-          </div>
-          
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500">Firmware</p>
-            <p className="text-sm font-medium text-gray-700">{device.firmware_version}</p>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Messwerte Toggle Button */}
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowMetrics(!showMetrics)}
-            className="text-xs font-medium"
-            disabled={device.status === 'offline'}
-          >
-            {showMetrics ? 'Messwerte ausblenden' : 'Detaillierte Messwerte anzeigen'}
-          </Button>
-        </div>
-
-        {/* Detailed Metrics Panel */}
-        {showMetrics && (
-          <div className="mt-4">
-            <DeviceMetrics 
-              deviceId={device.device_id} 
-              className="border-t border-gray-100 pt-4"
-            />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </>
   )
 } 

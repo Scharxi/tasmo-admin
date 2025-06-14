@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useDeviceMetrics } from '@/hooks/useDevices'
 import { Skeleton } from './ui/skeleton'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { Loader2, Zap, AlertCircle } from 'lucide-react'
 
 // Icons für Messwerte
 const VoltageIcon = () => (
@@ -66,47 +67,59 @@ interface MetricsData {
 }
 
 export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) {
-  const { data: metrics, isLoading, error, isRefetching, refetch } = useDeviceMetrics(deviceId)
-  const [isManualRefresh, setIsManualRefresh] = useState(false)
+  const [metrics, setMetrics] = useState<MetricsData>({
+    voltage: 0,
+    current: 0,
+    power: 0,
+    apparent_power: 0,
+    reactive_power: 0,
+    factor: 0,
+    today: 0,
+    yesterday: 0,
+    total: 0,
+    last_update: new Date().toISOString(),
+    message: undefined
+  })
+  
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleManualRefresh = useCallback(async () => {
-    setIsManualRefresh(true)
-    try {
-      // Force refresh via POST to metrics endpoint
-      await fetch(`/api/devices/${deviceId}/metrics`, { method: 'POST' })
-      await refetch()
-    } catch (error) {
-      console.error('Failed to refresh metrics:', error)
-    } finally {
-      setIsManualRefresh(false)
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const response = await fetch(`/api/devices/${deviceId}/metrics`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setMetrics(data)
+      } catch (err) {
+        console.error('Error fetching device metrics:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load metrics')
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [deviceId, refetch])
 
-  if (isLoading) {
+    fetchMetrics()
+    
+    // Refresh metrics every 10 seconds
+    const interval = setInterval(fetchMetrics, 10000)
+    return () => clearInterval(interval)
+  }, [deviceId])
+
+  if (loading) {
     return (
-      <Card className={`bg-white/90 border-gray-200 shadow-sm ${className}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-            <EnergyIcon />
-            Messwerte
-            <div className="ml-auto">
-              <Skeleton className="w-16 h-4" />
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Skeleton className="w-5 h-5 rounded" />
-                <Skeleton className="w-16 h-4" />
-              </div>
-              <div className="text-right">
-                <Skeleton className="w-12 h-5 mb-1" />
-                <Skeleton className="w-8 h-3" />
-              </div>
-            </div>
-          ))}
+      <Card className={`bg-white/90 rounded-lg border border-gray-200 ${className}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <span className="text-sm text-gray-600">Loading metrics...</span>
+          </div>
         </CardContent>
       </Card>
     )
@@ -114,146 +127,34 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
 
   if (error) {
     return (
-      <Card className={`bg-white/90 border-red-200 shadow-sm ${className}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-red-600 flex items-center gap-2">
-            <WarningIcon />
-            Messwerte
-            <div className="ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManualRefresh}
-                disabled={isManualRefresh}
-                className="h-6 px-2 text-xs"
-              >
-                {isManualRefresh ? (
-                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <RefreshIcon />
-                )}
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-red-500 text-sm mb-2">
-            Fehler beim Laden der Messwerte
+      <Card className={`bg-white/90 rounded-lg border border-red-200 ${className}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-2 text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">Error: {error}</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="text-xs"
-          >
-            Erneut versuchen
-          </Button>
         </CardContent>
       </Card>
     )
   }
 
-  if (!metrics) {
-    return (
-      <Card className={`bg-white/90 border-gray-200 shadow-sm ${className}`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-            <EnergyIcon />
-            Messwerte
-            <div className="ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManualRefresh}
-                disabled={isManualRefresh}
-                className="h-6 px-2 text-xs"
-              >
-                {isManualRefresh ? (
-                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <RefreshIcon />
-                )}
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-500 text-sm">Keine Messwerte verfügbar</p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const formatTime = (isoString: string) => {
-    return new Date(isoString).toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
-
-  // Determine card styling based on data quality
-  const isOfflineData = metrics.device_online === false
   const hasEnergyMonitoring = metrics.has_energy_monitoring !== false
-  const cardBorderClass = isOfflineData 
-    ? 'border-orange-200 bg-orange-50/30' 
-    : hasEnergyMonitoring 
-      ? 'border-green-200 bg-green-50/30' 
-      : 'border-gray-200 bg-gray-50/30'
 
   return (
-    <Card className={`transition-all duration-200 shadow-sm ${className} ${cardBorderClass} ${isRefetching ? 'ring-2 ring-blue-200' : ''}`}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-          <EnergyIcon />
-          Messwerte
-          <div className="ml-auto flex items-center gap-2">
-            {/* Status indicator */}
-            {isOfflineData && (
-              <Badge variant="warning" className="text-xs">
-                Offline
-              </Badge>
-            )}
-            {!hasEnergyMonitoring && (
-              <Badge variant="secondary" className="text-xs">
-                Basis
-              </Badge>
-            )}
-            {hasEnergyMonitoring && !isOfflineData && (
-              <Badge variant="success" className="text-xs">
-                Live
-              </Badge>
-            )}
-            
-            {/* Refresh indicator */}
-            {(isRefetching || isManualRefresh) && (
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            )}
-            
-            {/* Manual refresh button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleManualRefresh}
-              disabled={isManualRefresh}
-              className="h-6 w-6 p-1 hover:bg-gray-100"
-              title="Daten aktualisieren"
-            >
-              {isManualRefresh ? (
-                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <RefreshIcon />
-              )}
-            </Button>
-            
-            {/* Timestamp */}
-            <Badge variant="outline" className="text-xs">
-              {formatTime(metrics.last_update || metrics.lastUpdate)}
-            </Badge>
-          </div>
-        </CardTitle>
+    <Card className={`bg-white/90 rounded-lg border border-gray-200 ${className}`}>
+      <CardHeader className="pb-2 pt-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <div className="p-1 bg-blue-100 rounded">
+              <Zap className="h-3 w-3 text-blue-600" />
+            </div>
+            Detaillierte Messwerte
+          </CardTitle>
+          <Badge variant="outline" className="text-xs">
+            Live
+          </Badge>
+        </div>
         
-        {/* Optional message */}
         {metrics.message && (
           <p className="text-xs text-gray-500 mt-1">
             {metrics.message}
@@ -261,88 +162,88 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
         )}
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        {/* Spannung */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-yellow-100 rounded-lg">
+      <CardContent className="space-y-3 p-3 pt-0">
+        {/* Primary Measurements Grid */}
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          {/* Spannung */}
+          <div className="text-center">
+            <div className="p-2 bg-yellow-50 rounded-lg border border-yellow-100">
               <VoltageIcon />
+              <div className="mt-1">
+                <div className="font-bold text-gray-900">
+                  {metrics.voltage?.toFixed(1) || '0.0'}
+                </div>
+                <div className="text-gray-500">V</div>
+              </div>
             </div>
-            <span className="text-sm font-medium text-gray-700">Spannung</span>
           </div>
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900">
-              {metrics.voltage?.toFixed(1) || '0.0'}
-            </div>
-            <div className="text-xs text-gray-500">V</div>
-          </div>
-        </div>
 
-        {/* Strom */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-blue-100 rounded-lg">
+          {/* Strom */}
+          <div className="text-center">
+            <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
               <CurrentIcon />
+              <div className="mt-1">
+                <div className="font-bold text-gray-900">
+                  {metrics.current?.toFixed(3) || '0.000'}
+                </div>
+                <div className="text-gray-500">A</div>
+              </div>
             </div>
-            <span className="text-sm font-medium text-gray-700">Strom</span>
           </div>
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900">
-              {metrics.current?.toFixed(3) || '0.000'}
-            </div>
-            <div className="text-xs text-gray-500">A</div>
-          </div>
-        </div>
 
-        {/* Leistung */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-green-100 rounded-lg">
+          {/* Leistung */}
+          <div className="text-center">
+            <div className="p-2 bg-green-50 rounded-lg border border-green-100">
               <PowerIcon />
+              <div className="mt-1">
+                <div className="font-bold text-gray-900">
+                  {metrics.power?.toFixed(1) || '0.0'}
+                </div>
+                <div className="text-gray-500">W</div>
+              </div>
             </div>
-            <span className="text-sm font-medium text-gray-700">Leistung</span>
-          </div>
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900">
-              {metrics.power?.toFixed(1) || '0.0'}
-            </div>
-            <div className="text-xs text-gray-500">W</div>
           </div>
         </div>
 
-        {/* Leistungsfaktor - only show if we have real energy monitoring */}
+        {/* Advanced Power Metrics (wenn verfügbar) */}
         {hasEnergyMonitoring && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-purple-100 rounded-lg">
-                <EnergyIcon />
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 text-xs">
+            <div className="text-center">
+              <div className="font-medium text-gray-900">
+                {metrics.apparent_power?.toFixed(1) || '0.0'} VA
               </div>
-              <span className="text-sm font-medium text-gray-700">Faktor</span>
+              <div className="text-gray-500">Scheinleistung</div>
             </div>
-            <div className="text-right">
-              <div className="text-lg font-bold text-gray-900">
-                {metrics.factor?.toFixed(2) || '1.00'}
+            <div className="text-center">
+              <div className="font-medium text-gray-900">
+                {metrics.reactive_power?.toFixed(1) || '0.0'} var
               </div>
-              <div className="text-xs text-gray-500">cos φ</div>
+              <div className="text-gray-500">Blindleistung</div>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-gray-900">
+                {metrics.factor?.toFixed(2) || '0.00'}
+              </div>
+              <div className="text-gray-500">Leistungsfaktor</div>
             </div>
           </div>
         )}
 
-        {/* Energie heute/gestern - only show if meaningful */}
+        {/* Energy Consumption Summary */}
         {(metrics.today > 0 || metrics.yesterday > 0 || hasEnergyMonitoring) && (
-          <div className="pt-3 border-t border-gray-100">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-900">
+          <div className="pt-2 border-t border-gray-100">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="text-center bg-emerald-50 rounded p-2">
+                <div className="font-semibold text-emerald-900">
                   {((metrics.today || 0) / 1000).toFixed(2)} kWh
                 </div>
-                <div className="text-xs text-gray-500">Heute</div>
+                <div className="text-emerald-600">Heute</div>
               </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-900">
+              <div className="text-center bg-gray-50 rounded p-2">
+                <div className="font-semibold text-gray-900">
                   {((metrics.yesterday || 0) / 1000).toFixed(2)} kWh
                 </div>
-                <div className="text-xs text-gray-500">Gestern</div>
+                <div className="text-gray-600">Gestern</div>
               </div>
             </div>
           </div>
