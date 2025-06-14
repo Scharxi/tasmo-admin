@@ -18,7 +18,9 @@ export function useDevices() {
     queryKey: deviceKeys.lists(),
     queryFn: () => tasmotaAPI.fetchDevices(),
     refetchInterval: 5000, // Alle 5 Sekunden für Echtzeitdaten
-    staleTime: 2000, // Daten sind 2 Sekunden lang frisch
+    staleTime: 1000, // Kürzere StaleTime für bessere Reaktivität
+    refetchOnWindowFocus: false, // Verhindert Race Conditions
+    refetchIntervalInBackground: true, // Weiter updaten auch wenn Tab inaktiv
   })
 }
 
@@ -50,13 +52,13 @@ export function useToggleDevicePower() {
   return useMutation({
     mutationFn: (deviceId: string) => tasmotaAPI.toggleDevicePower(deviceId),
     onMutate: async (deviceId: string) => {
-      // Cancel outgoing refetches
+      // Cancel outgoing refetches to prevent race conditions
       await queryClient.cancelQueries({ queryKey: deviceKeys.lists() })
       
-      // Snapshot previous value
+      // Snapshot previous value for rollback
       const previousDevices = queryClient.getQueryData<TasmotaDevice[]>(deviceKeys.lists())
       
-      // Optimistically update
+      // Optimistically update the UI immediately
       if (previousDevices) {
         const targetDevice = previousDevices.find(d => d.device_id === deviceId)
         if (targetDevice) {
@@ -76,9 +78,9 @@ export function useToggleDevicePower() {
       return { previousDevices, deviceId }
     },
     onSuccess: (data, deviceId, context) => {
-      // Always use server response as the source of truth
+      // Force immediate update with server response
       const currentDevices = queryClient.getQueryData<TasmotaDevice[]>(deviceKeys.lists())
-      if (currentDevices) {
+      if (currentDevices && data) {
         const updatedDevices = currentDevices.map(device => 
           device.device_id === deviceId ? data : device
         )
@@ -86,7 +88,7 @@ export function useToggleDevicePower() {
       }
     },
     onError: (err, deviceId, context) => {
-      // Rollback bei Fehler
+      // Rollback on error
       if (context?.previousDevices) {
         queryClient.setQueryData(deviceKeys.lists(), context.previousDevices)
       }
