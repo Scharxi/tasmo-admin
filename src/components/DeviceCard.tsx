@@ -234,9 +234,9 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
               disabled={isLoading || device.status === 'offline'}
               className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 device.power_state && device.status === 'online'
-                  ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg'
                   : 'bg-gray-400 text-white hover:bg-gray-500'
-              } ${isLoading ? 'animate-pulse' : ''}`}
+              } ${isLoading ? 'animate-pulse scale-95' : 'hover:scale-105'}`}
               title={device.power_state ? 'Ausschalten' : 'Einschalten'}
             >
               <PowerButtonIcon />

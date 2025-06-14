@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,10 +8,11 @@ import { DeviceCard } from '@/components/DeviceCard'
 import { AddDeviceDialog } from '@/components/AddDeviceDialog'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
 import { useDevices, useToggleDevicePower, useDashboardStats, useDeviceStateSynchronization, useDeleteDevice } from '@/hooks/useDevices'
+import { useWorkflows, useExecuteWorkflow, useDeleteWorkflow } from '@/hooks/useWorkflows'
 import { TasmotaDevice } from '@/lib/api'
 import Link from 'next/link'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, AlertTriangle } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Play, Edit, Trash2, Settings as SettingsLucide, Zap } from 'lucide-react'
 
 // Modern SVG Icons with better styling
 const HomeIcon = () => (
@@ -68,6 +69,9 @@ export function Dashboard() {
   
   // Tanstack Query Hooks
   const { data: devices = [], isLoading: loading, isRefetching: refreshing, dataUpdatedAt } = useDevices()
+  const { data: workflows = [], isLoading: workflowsLoading } = useWorkflows()
+  const executeWorkflowMutation = useExecuteWorkflow()
+  const deleteWorkflowMutation = useDeleteWorkflow()
   const togglePowerMutation = useToggleDevicePower()
   const deleteDeviceMutation = useDeleteDevice()
   const stats = useDashboardStats()
@@ -77,6 +81,7 @@ export function Dashboard() {
     setSelectedDevice(deviceId)
     try {
       const result = await togglePowerMutation.mutateAsync(deviceId)
+      console.log('Toggle power result:', result)
     } catch (error) {
       console.error('Failed to toggle device power:', error)
       setNotification({
@@ -84,7 +89,71 @@ export function Dashboard() {
         message: 'Failed to toggle device power'
       })
     } finally {
+      // Clear loading state immediately after request completes
       setSelectedDevice(null)
+    }
+  }
+
+  const handleExecuteWorkflow = async (workflowId: string) => {
+    const workflow = workflows.find(w => w.id === workflowId)
+    const workflowName = workflow?.name || 'Unbekannter Workflow'
+    
+    try {
+      // Show executing notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowExecuting(workflowName)
+      }
+      
+      // Also show in dashboard alert
+      setNotification({
+        type: 'success',
+        message: `⏳ Workflow "${workflowName}" wird ausgeführt...`
+      })
+      
+      const result = await executeWorkflowMutation.mutateAsync(workflowId)
+      
+      // Show success notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowSuccess(workflowName, result.message)
+      }
+      
+      // Also show in dashboard alert
+      setNotification({
+        type: 'success',
+        message: `✅ ${result.message || `Workflow "${workflowName}" erfolgreich ausgeführt!`}`
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      
+      // Show error notification via Toast
+      if ((window as any).workflowToast) {
+        (window as any).workflowToast.showWorkflowError(workflowName, errorMessage)
+      }
+      
+      // Also show in dashboard alert
+      setNotification({
+        type: 'error',
+        message: `❌ Workflow "${workflowName}" fehlgeschlagen: ${errorMessage}`
+      })
+    }
+  }
+
+  const handleDeleteWorkflow = async (workflowId: string) => {
+    if (!confirm('Sind Sie sicher, dass Sie diesen Workflow löschen möchten?')) {
+      return
+    }
+
+    try {
+      await deleteWorkflowMutation.mutateAsync(workflowId)
+      setNotification({
+        type: 'success',
+        message: 'Workflow erfolgreich gelöscht!'
+      })
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Fehler beim Löschen des Workflows'
+      })
     }
   }
 
@@ -108,6 +177,14 @@ export function Dashboard() {
   }
 
   const lastUpdate = new Date(dataUpdatedAt)
+
+  // Clear notification after 7 seconds (longer for workflow messages)
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 7000)
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
 
   if (loading) {
     return (
@@ -337,6 +414,185 @@ export function Dashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Workflows Section */}
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-800 to-purple-600 bg-clip-text text-transparent">
+                Workflows
+              </h2>
+              <p className="text-gray-600 mt-1">Automatisierte Geräte-Sequenzen verwalten</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Badge variant="outline" className="px-3 py-1 font-medium border-purple-300 text-purple-700">
+                {workflows.length} Workflows
+              </Badge>
+              <Badge variant="success" className="px-3 py-1 font-medium">
+                {workflows.filter(w => w.enabled).length} aktiv
+              </Badge>
+              <Link href="/workflows">
+                <Button
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
+                >
+                  <SettingsLucide className="w-4 h-4 mr-2" />
+                  Workflows verwalten
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {workflowsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg">
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 bg-gray-150 rounded animate-pulse"></div>
+                      <div className="h-4 bg-gray-100 rounded animate-pulse"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : workflows.length === 0 ? (
+            <Card className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg">
+              <CardContent className="p-16 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl p-4 mx-auto mb-6">
+                  <Zap className="w-full h-full text-purple-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Keine Workflows erstellt
+                </h3>
+                <p className="text-gray-600 max-w-md mx-auto mb-6">
+                  Erstellen Sie automatisierte Sequenzen für Ihre Geräte, um komplexe Abläufe zu vereinfachen.
+                </p>
+                <Link href="/workflows">
+                  <Button className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white">
+                    <Zap className="w-4 h-4 mr-2" />
+                    Ersten Workflow erstellen
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {workflows.slice(0, 6).map((workflow) => (
+                <Card key={workflow.id} className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Header Section */}
+                    <div className="p-6 pb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-2.5 text-white shadow-lg">
+                            <Zap className="w-full h-full" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                              {workflow.name}
+                            </h3>
+                            <Badge 
+                              variant={workflow.enabled ? "default" : "secondary"} 
+                              className={`mt-1 text-xs font-medium ${
+                                workflow.enabled 
+                                  ? 'bg-green-500 text-white border-green-500 hover:bg-green-600' 
+                                  : 'bg-gray-100 text-gray-600 border-gray-300'
+                              }`}
+                            >
+                              {workflow.enabled ? 'Aktiv' : 'Inaktiv'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {workflow.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                          {workflow.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                          <span>{workflow.steps?.length || 0} Schritt{(workflow.steps?.length || 0) !== 1 ? 'e' : ''}</span>
+                        </div>
+                        <span>{new Date(workflow.createdAt).toLocaleDateString('de-DE')}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Action Section */}
+                    <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                      <div className="flex items-center gap-2">
+                                              <Button
+                        size="sm"
+                        onClick={() => handleExecuteWorkflow(workflow.id)}
+                        disabled={!workflow.enabled || executeWorkflowMutation.isPending}
+                        className={`flex-1 text-white border-0 shadow-sm transition-all duration-200 ${
+                          executeWorkflowMutation.isPending
+                            ? 'bg-blue-500 hover:bg-blue-600 animate-pulse'
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                      >
+                        {executeWorkflowMutation.isPending ? (
+                          <>
+                            <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Läuft...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Ausführen
+                          </>
+                        )}
+                      </Button>
+                        <Link href={`/workflows?edit=${workflow.id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="p-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteWorkflow(workflow.id)}
+                          disabled={deleteWorkflowMutation.isPending}
+                          className="p-2 text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {workflows.length > 6 && (
+                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
+                  <CardContent className="p-6 flex flex-col items-center justify-center text-center min-h-[200px]">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg p-2 text-white mb-3">
+                      <SettingsLucide className="w-full h-full" />
+                    </div>
+                    <h3 className="font-semibold text-purple-900 mb-2">
+                      {workflows.length - 6} weitere Workflows
+                    </h3>
+                    <p className="text-sm text-purple-700 mb-4">
+                      Alle Workflows anzeigen und verwalten
+                    </p>
+                    <Link href="/workflows">
+                      <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                        Alle anzeigen
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Devices Section */}

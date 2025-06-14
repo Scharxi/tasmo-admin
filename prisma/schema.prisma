@@ -38,6 +38,8 @@ model Device {
   // Relations
   energyReadings    EnergyReading[]
   deviceLogs        DeviceLog[]
+  workflowSteps     WorkflowStep[]
+  workflowConditions WorkflowCondition[]
 
   @@map("devices")
 }
@@ -71,6 +73,66 @@ model DeviceLog {
   @@map("device_logs")
 }
 
+model Workflow {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  steps       WorkflowStep[]
+  executions  WorkflowExecution[]
+
+  @@map("workflows")
+}
+
+model WorkflowStep {
+  id          String    @id @default(cuid())
+  workflowId  String    @map("workflow_id")
+  deviceId    String    @map("device_id")
+  action      WorkflowAction
+  delay       Int?      // delay in seconds
+  order       Int       // execution order
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  workflow    Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  device      Device    @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  conditions  WorkflowCondition[]
+
+  @@map("workflow_steps")
+}
+
+model WorkflowCondition {
+  id          String    @id @default(cuid())
+  stepId      String    @map("step_id")
+  deviceId    String    @map("device_id")
+  state       DeviceState
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  step        WorkflowStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  device      Device    @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+
+  @@map("workflow_conditions")
+}
+
+model WorkflowExecution {
+  id          String    @id @default(cuid())
+  workflowId  String    @map("workflow_id")
+  status      ExecutionStatus @default(PENDING)
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  errorMessage String?  @map("error_message")
+  
+  // Relations
+  workflow    Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_executions")
+}
+
 enum DeviceStatus {
   ONLINE
   OFFLINE
@@ -82,4 +144,23 @@ enum LogLevel {
   INFO
   WARN
   ERROR
+}
+
+enum WorkflowAction {
+  TURN_ON
+  TURN_OFF
+  DELAY
+}
+
+enum DeviceState {
+  ON
+  OFF
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
 } 
