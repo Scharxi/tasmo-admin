@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { DeviceService } from '@/lib/db'
 import { DeviceStatus } from '@prisma/client'
 import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
 
 // Validation schemas
 const createDeviceSchema = z.object({
@@ -46,12 +47,26 @@ async function checkDeviceOnline(ipAddress: string): Promise<any | null> {
   }
 }
 
-// GET /api/devices - Get all devices
-export async function GET() {
+// GET /api/devices - Get all devices (with optional category filter)
+export async function GET(request: NextRequest) {
   try {
-    const devices = await DeviceService.getAllDevices()
-    
-    // Transform to match frontend interface
+    const { searchParams } = new URL(request.url)
+    const categoryId = searchParams.get('categoryId')
+
+    // Build the where clause based on category filter
+    const whereClause = categoryId ? { categoryId } : {}
+
+    const devices = await prisma.device.findMany({
+      where: whereClause,
+      include: {
+        category: true, // Include the category relationship
+      },
+      orderBy: {
+        deviceName: 'asc'
+      }
+    })
+
+    // Transform the data to match the expected API format
     const transformedDevices = devices.map(device => ({
       device_id: device.deviceId,
       device_name: device.deviceName,
@@ -66,7 +81,18 @@ export async function GET() {
       uptime: device.uptime,
       voltage: device.voltage,
       current: device.current,
-      last_seen: device.lastSeen.toISOString()
+      last_seen: device.lastSeen.toISOString(),
+      category: device.category ? {
+        id: device.category.id,
+        name: device.category.name,
+        color: device.category.color,
+        icon: device.category.icon,
+        description: device.category.description,
+        isDefault: device.category.isDefault,
+        createdAt: device.category.createdAt.toISOString(),
+        updatedAt: device.category.updatedAt.toISOString()
+      } : undefined,
+      description: device.description
     }))
 
     return NextResponse.json(transformedDevices)
@@ -88,7 +114,10 @@ export async function POST(request: NextRequest) {
     const validatedData = createDeviceSchema.parse(body)
     
     // Check if device already exists
-    const existingDevice = await DeviceService.getDeviceByDeviceId(validatedData.deviceId)
+    const existingDevice = await prisma.device.findUnique({
+      where: { deviceId: validatedData.deviceId }
+    })
+    
     if (existingDevice) {
       return NextResponse.json(
         { error: 'Device with this ID already exists' },
@@ -97,9 +126,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Create device
-    const device = await DeviceService.createDevice({
-      ...validatedData,
-      status: DeviceStatus.ONLINE // Device is online since we successfully fetched its info
+    const device = await prisma.device.create({
+      data: {
+        ...validatedData,
+        status: DeviceStatus.ONLINE // Device is online since we successfully fetched its info
+      },
+      include: {
+        category: true
+      }
     })
     
     // Transform response
@@ -117,7 +151,18 @@ export async function POST(request: NextRequest) {
       uptime: device.uptime,
       voltage: device.voltage,
       current: device.current,
-      last_seen: device.lastSeen.toISOString()
+      last_seen: device.lastSeen.toISOString(),
+      category: device.category ? {
+        id: device.category.id,
+        name: device.category.name,
+        color: device.category.color,
+        icon: device.category.icon,
+        description: device.category.description,
+        isDefault: device.category.isDefault,
+        createdAt: device.category.createdAt.toISOString(),
+        updatedAt: device.category.updatedAt.toISOString()
+      } : undefined,
+      description: device.description
     }
     
     return NextResponse.json(transformedDevice, { status: 201 })
