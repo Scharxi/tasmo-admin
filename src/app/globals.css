@@ -137,6 +137,37 @@
     background-clip: text;
   }
 
+  /* Custom Color Picker Styles */
+  .react-colorful {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .react-colorful__saturation {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .react-colorful__hue {
+    border-radius: 0 0 8px 8px;
+    height: 24px;
+    margin-top: 12px;
+  }
+
+  .react-colorful__pointer {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .react-colorful__hue-pointer {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
   /* Enhanced Glass Morphism */
   .glass-enhanced {
     backdrop-filter: blur(20px) saturate(200%);
