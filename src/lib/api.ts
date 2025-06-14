@@ -15,6 +15,34 @@ export interface TasmotaDevice {
   voltage?: number
   current?: number
   last_seen: string
+  // Device categorization
+  category?: DeviceCategory
+  description?: string
+}
+
+export interface DeviceCategory {
+  id: string
+  name: string
+  color: string
+  icon?: string
+  description?: string
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateCategoryRequest {
+  name: string
+  color: string
+  icon?: string
+  description?: string
+}
+
+export interface UpdateCategoryRequest {
+  name?: string
+  color?: string
+  icon?: string
+  description?: string
 }
 
 export interface EnergyData {
@@ -441,6 +469,119 @@ export class TasmotaAPI {
   // Add device (alias for createDevice for consistency)
   async addDevice(data: CreateDeviceRequest): Promise<TasmotaDevice> {
     return this.createDevice(data)
+  }
+
+  async updateDeviceCategory(deviceId: string, categoryId: string, description?: string): Promise<TasmotaDevice> {
+    try {
+      const response = await fetch(`${this.baseUrl}/devices/${deviceId}/category`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ categoryId, description }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to update device category:', error)
+      throw error
+    }
+  }
+
+  async getDevicesByCategory(categoryId?: string): Promise<TasmotaDevice[]> {
+    try {
+      const url = categoryId 
+        ? `${this.baseUrl}/devices?categoryId=${categoryId}` 
+        : `${this.baseUrl}/devices`
+      
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch devices by category:', error)
+      throw error
+    }
+  }
+
+  // Category management methods
+  async getCategories(): Promise<DeviceCategory[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/categories`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
+      throw error
+    }
+  }
+
+  async createCategory(category: CreateCategoryRequest): Promise<DeviceCategory> {
+    try {
+      const response = await fetch(`${this.baseUrl}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(category),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to create category:', error)
+      throw error
+    }
+  }
+
+  async updateCategory(categoryId: string, updates: UpdateCategoryRequest): Promise<DeviceCategory> {
+    try {
+      const response = await fetch(`${this.baseUrl}/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to update category:', error)
+      throw error
+    }
+  }
+
+  async deleteCategory(categoryId: string): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/categories/${categoryId}`, {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('Failed to delete category:', error)
+      throw error
+    }
   }
 }
 
