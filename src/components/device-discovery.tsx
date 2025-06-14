@@ -198,9 +198,11 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
           </div>
           
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="text-red-700">
+                {error}
+              </AlertDescription>
             </Alert>
           )}
           
