@@ -1,0 +1,23 @@
+# Development Dockerfile - runs in dev mode
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Expose port
+EXPOSE 3000
+
+# Run in development mode
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"] 
