@@ -1,12 +1,31 @@
-Dockerfile
-.dockerignore
-node_modules
-npm-debug.log
-README.md
-.env*.local
+# Git files
 .git
 .gitignore
-.next
-.vercel
+
+# Documentation
+README.md
+*.md
+
+# Docker files
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
 .DS_Store
-*.tsbuildinfo 
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/ 
