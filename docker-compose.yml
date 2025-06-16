@@ -12,7 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./tasmo-admin/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - tasmota-network
     healthcheck:
@@ -24,7 +23,7 @@ services:
   # Next.js Frontend
   tasmo-admin:
     build:
-      context: ./tasmo-admin
+      context: .
       dockerfile: Dockerfile
     container_name: tasmo-admin
     restart: unless-stopped
