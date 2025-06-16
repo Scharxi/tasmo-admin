@@ -185,52 +185,6 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
             </Alert>
           )}
 
-          {/* Device Discovery Section */}
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="font-semibold text-blue-900">Auto-Discovery</h3>
-                <p className="text-sm text-blue-700">Scan network for Tasmota devices</p>
-              </div>
-              <Button
-                onClick={handleDiscover}
-                disabled={isDiscovering}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {isDiscovering ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <Search className="w-4 h-4 mr-2" />
-                )}
-                {isDiscovering ? 'Scanning...' : 'Discover'}
-              </Button>
-            </div>
-
-            {discoveredDevices.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-blue-900">Found devices:</p>
-                {discoveredDevices.map((device, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-200"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-800">{device.device_name}</p>
-                      <p className="text-sm text-gray-600">{device.ip_address}</p>
-                    </div>
-                    <Button
-                      onClick={() => handleSelectDiscovered(device)}
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Select
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Manual IP Entry */}
           <div>
             <h3 className="font-semibold text-gray-800 mb-4">Manual Entry</h3>
