@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { WorkflowBuilder } from '@/components/WorkflowBuilder'
 import type { Metadata } from 'next'
 
@@ -6,6 +7,14 @@ export const metadata: Metadata = {
   description: 'Erstellen und verwalten Sie automatisierte Geräte-Workflows',
 }
 
-export default function WorkflowsPage() {
+function WorkflowBuilderWrapper() {
   return <WorkflowBuilder />
+}
+
+export default function WorkflowsPage() {
+  return (
+    <Suspense fallback={<div>Loading workflows...</div>}>
+      <WorkflowBuilderWrapper />
+    </Suspense>
+  )
 } 
