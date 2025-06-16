@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: tasmota-postgres
@@ -13,10 +12,33 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - tasmota-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasmota_user -d tasmota_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Next.js Frontend
+  tasmo-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tasmo-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://tasmota_user:tasmota_password@postgres:5432/tasmota_db?schema=public
+    networks:
+      - tasmota-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Database Administration Tool
   adminer:
     image: adminer:latest
     container_name: tasmota-adminer
