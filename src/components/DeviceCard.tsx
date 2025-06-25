@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
 import { DeviceCategoryDialog } from '@/components/DeviceCategoryDialog'
 import { CriticalPowerConfirmDialog } from '@/components/CriticalPowerConfirmDialog'
+import { PasswordDialog } from '@/components/PasswordDialog'
 import { TasmotaDevice } from '@/lib/api'
 import { Power, Trash2, AlertTriangle, CheckCircle, Wifi, Settings, ShieldAlert } from 'lucide-react'
 
@@ -64,6 +65,25 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showCriticalConfirm, setShowCriticalConfirm] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [securityEnabled, setSecurityEnabled] = useState(false)
+
+  // Load security configuration on component mount
+  useEffect(() => {
+    const loadSecurityConfig = async () => {
+      try {
+        const response = await fetch('/api/security/config')
+        if (response.ok) {
+          const config = await response.json()
+          setSecurityEnabled(config.isEnabled && config.hasPassword)
+        }
+      } catch (error) {
+        console.error('Failed to load security config:', error)
+        setSecurityEnabled(false) // Safe fallback
+      }
+    }
+    loadSecurityConfig()
+  }, [])
   
   const formatEnergy = (watts: number): string => {
     if (watts >= 1000) {
@@ -121,7 +141,13 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
   const handlePowerToggle = () => {
     // Check if device is critical and currently powered on
     if (device.is_critical && device.power_state && device.status === 'online') {
-      setShowCriticalConfirm(true)
+      if (securityEnabled) {
+        // If security is enabled, show password dialog
+        setShowPasswordDialog(true)
+      } else {
+        // If security is disabled, show critical confirmation dialog
+        setShowCriticalConfirm(true)
+      }
     } else {
       onTogglePower(device.device_id)
     }
@@ -130,6 +156,11 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
   const handleCriticalPowerConfirm = () => {
     onTogglePower(device.device_id)
     setShowCriticalConfirm(false)
+  }
+
+  const handlePasswordConfirm = () => {
+    onTogglePower(device.device_id)
+    setShowPasswordDialog(false)
   }
 
   return (
@@ -424,6 +455,14 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
         isOpen={showCriticalConfirm}
         onClose={() => setShowCriticalConfirm(false)}
         onConfirm={handleCriticalPowerConfirm}
+        device={device}
+      />
+
+      {/* Password Dialog for Security-Protected Critical Devices */}
+      <PasswordDialog
+        isOpen={showPasswordDialog}
+        onClose={() => setShowPasswordDialog(false)}
+        onConfirm={handlePasswordConfirm}
         device={device}
       />
     </>
