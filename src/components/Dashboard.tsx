@@ -13,11 +13,13 @@ import {
   useDeleteDevice,
   useDeviceStateSynchronization
 } from '@/hooks/useDevices'
+import { CriticalPowerConfirmDialog } from '@/components/CriticalPowerConfirmDialog'
+import { PasswordDialog } from '@/components/PasswordDialog'
 import { useWorkflows, useExecuteWorkflow, useDeleteWorkflow } from '@/hooks/useWorkflows'
 import { TasmotaDevice, DeviceCategory } from '@/lib/api'
 import Link from 'next/link'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, AlertTriangle, Grid, List, Filter, Palette } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Grid, List, Filter, Palette, LayoutGrid, Settings, Trash2, ShieldAlert } from 'lucide-react'
 
 
 // Modern SVG Icons with better styling
@@ -65,7 +67,7 @@ const SettingsIcon = () => (
   </svg>
 )
 
-type ViewMode = 'categories' | 'grid'
+type ViewMode = 'categories' | 'grid' | 'compact'
 
 export function Dashboard() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
@@ -77,6 +79,10 @@ export function Dashboard() {
     message: string
   } | null>(null)
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [showCriticalConfirm, setShowCriticalConfirm] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [securityEnabled, setSecurityEnabled] = useState(false)
+  const [criticalDeviceId, setCriticalDeviceId] = useState<string | null>(null)
   
   // Tanstack Query Hooks
   const { data: devices = [], isLoading: devicesLoading, dataUpdatedAt, isRefetching: refreshing } = useDevices()
@@ -89,9 +95,42 @@ export function Dashboard() {
   const { forceRefresh } = useDeviceStateSynchronization()
   const { data: categories = [], isLoading: categoriesLoading } = useCategories()
 
+  // Load security configuration on component mount
+  useEffect(() => {
+    const loadSecurityConfig = async () => {
+      try {
+        const response = await fetch('/api/security/config')
+        if (response.ok) {
+          const config = await response.json()
+          setSecurityEnabled(config.isEnabled && config.hasPassword)
+        }
+      } catch (error) {
+        console.error('Failed to load security config:', error)
+        setSecurityEnabled(false) // Safe fallback
+      }
+    }
+    loadSecurityConfig()
+  }, [])
+
 
 
   const handleTogglePower = async (deviceId: string) => {
+    const device = devices.find(d => d.device_id === deviceId)
+    
+    // Check if device is critical and currently powered on
+    if (device?.is_critical && device.power_state && device.status === 'online') {
+      setCriticalDeviceId(deviceId)
+      if (securityEnabled) {
+        // If security is enabled, show password dialog
+        setShowPasswordDialog(true)
+      } else {
+        // If security is disabled, show critical confirmation dialog
+        setShowCriticalConfirm(true)
+      }
+      return
+    }
+    
+    // Normal power toggle
     setSelectedDevice(deviceId)
     try {
       const result = await togglePowerMutation.mutateAsync(deviceId)
@@ -106,6 +145,46 @@ export function Dashboard() {
       // Clear loading state immediately after request completes
       setSelectedDevice(null)
     }
+  }
+
+  const handleCriticalPowerConfirm = async () => {
+    if (criticalDeviceId) {
+      setSelectedDevice(criticalDeviceId)
+      try {
+        const result = await togglePowerMutation.mutateAsync(criticalDeviceId)
+        console.log('Toggle power result:', result)
+      } catch (error) {
+        console.error('Failed to toggle device power:', error)
+        setNotification({
+          type: 'error',
+          message: 'Failed to toggle device power'
+        })
+      } finally {
+        setSelectedDevice(null)
+      }
+    }
+    setShowCriticalConfirm(false)
+    setCriticalDeviceId(null)
+  }
+
+  const handlePasswordConfirm = async () => {
+    if (criticalDeviceId) {
+      setSelectedDevice(criticalDeviceId)
+      try {
+        const result = await togglePowerMutation.mutateAsync(criticalDeviceId)
+        console.log('Toggle power result:', result)
+      } catch (error) {
+        console.error('Failed to toggle device power:', error)
+        setNotification({
+          type: 'error',
+          message: 'Failed to toggle device power'
+        })
+      } finally {
+        setSelectedDevice(null)
+      }
+    }
+    setShowPasswordDialog(false)
+    setCriticalDeviceId(null)
   }
 
   const handleExecuteWorkflow = async (workflowId: string) => {
@@ -316,7 +395,7 @@ export function Dashboard() {
         </div>
       )}
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 space-y-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 space-y-8 pb-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -567,9 +646,18 @@ export function Dashboard() {
               <List className="h-4 w-4" />
               Liste
             </Button>
+            <Button
+              variant={viewMode === 'compact' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('compact')}
+              className="gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Compact
+            </Button>
           </div>
           
-          {viewMode === 'grid' && (
+          {(viewMode === 'grid' || viewMode === 'compact') && (
             <div className="flex items-center gap-3">
               {/* Custom Styled Dropdown */}
               <div className="relative">
@@ -775,6 +863,144 @@ export function Dashboard() {
               </div>
             )}
           </div>
+        ) : viewMode === 'compact' ? (
+          <div className="space-y-4">
+            {/* Compact view header */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {selectedCategoryId === null 
+                  ? `Alle Geräte (${filteredDevices.length})`
+                  : selectedCategoryId === 'uncategorized'
+                  ? `Ohne Kategorie (${filteredDevices.length})`
+                  : `${categories.find(cat => cat.id === selectedCategoryId)?.name} (${filteredDevices.length})`
+                }
+              </h2>
+            </div>
+
+            {/* Compact device cards grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filteredDevices.map((device) => (
+                <div
+                  key={device.device_id}
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                >
+                  {/* Category color bar */}
+                  <div 
+                    className="h-1.5"
+                    style={{ 
+                      backgroundColor: device.category?.color || (
+                        device.status === 'offline' 
+                          ? '#ef4444' 
+                          : device.power_state
+                            ? '#10b981'
+                            : '#f59e0b'
+                      )
+                    }}
+                  />
+                  
+                  {/* Card content */}
+                  <div className="p-4">
+                    {/* Device name and status */}
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <h3 className="text-base font-medium text-gray-900 truncate flex-1 pr-2">
+                          {device.device_name}
+                        </h3>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {device.is_critical && (
+                            <ShieldAlert className="h-4 w-4 text-amber-500" />
+                          )}
+                          {/* Status badge */}
+                          {device.status === 'offline' ? (
+                            <Badge variant="destructive" className="text-xs px-2 py-0.5">Offline</Badge>
+                          ) : device.power_state ? (
+                            <Badge variant="success" className="text-xs px-2 py-0.5">Ein</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs px-2 py-0.5">Aus</Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Key info */}
+                      <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                        <span className="flex items-center space-x-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 0 1 7.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                          </svg>
+                          <span>{device.wifi_signal}dB</span>
+                        </span>
+                        {device.energy_consumption > 0 && (
+                          <span className="flex items-center space-x-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>{device.energy_consumption > 1000 ? `${(device.energy_consumption / 1000).toFixed(1)}kW` : `${device.energy_consumption.toFixed(0)}W`}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center justify-center space-x-2 mt-4">
+                      {/* Power toggle */}
+                      <Button
+                        size="sm"
+                        variant={device.power_state && device.status === 'online' ? 'default' : 'outline'}
+                        onClick={() => handleTogglePower(device.device_id)}
+                        disabled={device.status === 'offline' || selectedDevice === device.device_id}
+                        className={`h-9 w-9 p-0 ${
+                          device.power_state && device.status === 'online' 
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-green-500 shadow-lg shadow-green-500/25' 
+                            : ''
+                        }`}
+                        title={device.power_state ? 'Ausschalten' : 'Einschalten'}
+                      >
+                        {selectedDevice === device.device_id ? (
+                          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9" />
+                          </svg>
+                        )}
+                      </Button>
+
+                      {/* Delete button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm('Sind Sie sicher, dass Sie dieses Gerät entfernen möchten?')) {
+                            handleDeleteDevice(device.device_id)
+                          }
+                        }}
+                        className="h-9 w-9 p-0 text-gray-500 hover:text-red-600"
+                        title="Gerät entfernen"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Empty state for compact view */}
+            {filteredDevices.length === 0 && (
+              <div className="text-center py-12">
+                <LayoutGrid className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Geräte gefunden</h3>
+                <p className="text-gray-500">
+                  {selectedCategoryId 
+                    ? 'Wählen Sie eine andere Kategorie oder fügen Sie Geräte zu dieser Kategorie hinzu.'
+                    : 'Fügen Sie Ihre ersten Tasmota-Geräte hinzu, um loszulegen.'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -812,6 +1038,28 @@ export function Dashboard() {
         onDeviceAdded={() => {
           setShowAddDialog(false)
         }}
+      />
+
+      {/* Critical Power Confirmation Dialog */}
+      <CriticalPowerConfirmDialog
+        isOpen={showCriticalConfirm}
+        onClose={() => {
+          setShowCriticalConfirm(false)
+          setCriticalDeviceId(null)
+        }}
+        onConfirm={handleCriticalPowerConfirm}
+        device={criticalDeviceId ? devices.find(d => d.device_id === criticalDeviceId) : undefined}
+      />
+
+      {/* Password Dialog */}
+      <PasswordDialog
+        isOpen={showPasswordDialog}
+        onClose={() => {
+          setShowPasswordDialog(false)
+          setCriticalDeviceId(null)
+        }}
+        onConfirm={handlePasswordConfirm}
+        device={criticalDeviceId ? devices.find(d => d.device_id === criticalDeviceId) : undefined}
       />
     </div>
   )
