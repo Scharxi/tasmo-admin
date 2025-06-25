@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
 import { DeviceCategoryDialog } from '@/components/DeviceCategoryDialog'
+import { CriticalPowerConfirmDialog } from '@/components/CriticalPowerConfirmDialog'
 import { TasmotaDevice } from '@/lib/api'
-import { Power, Trash2, AlertTriangle, CheckCircle, Wifi, Settings } from 'lucide-react'
+import { Power, Trash2, AlertTriangle, CheckCircle, Wifi, Settings, ShieldAlert } from 'lucide-react'
 
 // Modern SVG icons with enhanced styling
 const PowerIcon = () => (
@@ -62,6 +63,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showCriticalConfirm, setShowCriticalConfirm] = useState(false)
   
   const formatEnergy = (watts: number): string => {
     if (watts >= 1000) {
@@ -116,6 +118,20 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
     }
   }
 
+  const handlePowerToggle = () => {
+    // Check if device is critical and currently powered on
+    if (device.is_critical && device.power_state && device.status === 'online') {
+      setShowCriticalConfirm(true)
+    } else {
+      onTogglePower(device.device_id)
+    }
+  }
+
+  const handleCriticalPowerConfirm = () => {
+    onTogglePower(device.device_id)
+    setShowCriticalConfirm(false)
+  }
+
   return (
     <>
       <Card className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-fit max-w-full">
@@ -149,9 +165,18 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                 <PlugIcon />
               </div>
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-base font-semibold text-gray-800 break-words">
-                  {device.device_name}
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base font-semibold text-gray-800 break-words">
+                    {device.device_name}
+                  </CardTitle>
+                  {device.is_critical && (
+                    <div className="flex-shrink-0" title="Kritisches Gerät - Erfordert Bestätigung beim Ausschalten">
+                      <ShieldAlert 
+                        className="h-4 w-4 text-amber-500" 
+                      />
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 break-all">ID: {device.device_id}</p>
               </div>
             </div>
@@ -275,7 +300,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
               </div>
             </div>
             <button
-              onClick={() => onTogglePower(device.device_id)}
+              onClick={handlePowerToggle}
               disabled={isLoading || device.status === 'offline'}
               className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 ${
                 device.power_state && device.status === 'online'
@@ -393,6 +418,14 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
           </Card>
         </div>
       )}
+
+      {/* Critical Power Confirmation Dialog */}
+      <CriticalPowerConfirmDialog
+        isOpen={showCriticalConfirm}
+        onClose={() => setShowCriticalConfirm(false)}
+        onConfirm={handleCriticalPowerConfirm}
+        device={device}
+      />
     </>
   )
 } 
