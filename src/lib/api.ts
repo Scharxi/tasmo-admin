@@ -15,6 +15,8 @@ export interface TasmotaDevice {
   voltage?: number
   current?: number
   last_seen: string
+  // Critical device marking
+  is_critical?: boolean
   // Device categorization
   category?: DeviceCategory
   description?: string
@@ -580,6 +582,28 @@ export class TasmotaAPI {
       }
     } catch (error) {
       console.error('Failed to delete category:', error)
+      throw error
+    }
+  }
+
+  async setCriticalStatus(deviceId: string, isCritical: boolean): Promise<TasmotaDevice> {
+    try {
+      const response = await fetch(`${this.baseUrl}/devices/${deviceId}/critical`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isCritical }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to set critical status:', error)
       throw error
     }
   }
