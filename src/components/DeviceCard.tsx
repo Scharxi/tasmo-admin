@@ -165,7 +165,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
 
   return (
     <>
-      <Card className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-fit max-w-full">
+      <Card className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-fit max-w-full">
         {/* Category Color Bar */}
         <div 
           className="h-1"
@@ -197,7 +197,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-base font-semibold text-gray-800 break-words">
+                  <CardTitle className="text-base font-semibold text-gray-800 dark:text-gray-200 break-words">
                     {device.device_name}
                   </CardTitle>
                   {device.is_critical && (
@@ -208,7 +208,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 break-all">ID: {device.device_id}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 break-all">ID: {device.device_id}</p>
               </div>
             </div>
             <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
@@ -217,7 +217,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                 device={device}
                 trigger={
                   <button
-                    className="h-7 w-7 p-1 border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                    className="h-7 w-7 p-1 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 hover:border-blue-200 dark:hover:border-blue-600 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
                     title="Kategorie bearbeiten"
                   >
                     <Settings className="h-3.5 w-3.5" />
@@ -226,7 +226,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
               />
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="h-7 w-7 p-1 border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                className="h-7 w-7 p-1 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900 hover:border-red-200 dark:hover:border-red-600 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
                 title="Gerät entfernen"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
@@ -239,7 +239,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
 
         <CardContent className="space-y-5 pt-0 px-5">
           {/* Category Info - Always reserve space for consistent layout */}
-          <div className="pb-3 border-b border-gray-100 min-w-0 min-h-[28px] flex items-center">
+          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 min-h-[28px] flex items-center">
             {device.category ? (
               <div className="flex flex-wrap gap-2 min-w-0">
                 <Badge 
@@ -258,13 +258,13 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                   <span className="truncate">{device.category.name}</span>
                 </Badge>
                 {device.description && (
-                  <span className="text-xs text-gray-500 truncate">• {device.description}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">• {device.description}</span>
                 )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
-                <span className="text-xs text-gray-400">Keine Kategorie</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">Keine Kategorie</span>
               </div>
             )}
           </div>
@@ -272,57 +272,57 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
           {/* Network Info */}
           <div className="grid grid-cols-2 gap-4 text-sm min-w-0">
             <div className="min-w-0">
-              <p className="text-xs text-gray-500 mb-2 font-medium">NETZWERK</p>
-              <p className="font-medium text-gray-700 flex items-center min-w-0 mb-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">NETZWERK</p>
+              <p className="font-medium text-gray-700 dark:text-gray-300 flex items-center min-w-0 mb-1">
                 <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2 flex-shrink-0"></span>
                 <span className="truncate">{device.ip_address}</span>
               </p>
-              <p className="text-xs text-gray-500 flex items-center min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center min-w-0">
                 <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2 flex-shrink-0"></span>
                 <span className="truncate">{device.mac_address}</span>
               </p>
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-gray-500 mb-2 font-medium">WIFI SIGNAL</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">WIFI SIGNAL</p>
               <div className="flex items-center space-x-2 min-w-0">
                 <WifiIcon />
                 <div className="min-w-0">
                   <p className={`text-sm font-medium ${wifi.color} truncate`}>
                     {device.wifi_signal}dBm
                   </p>
-                  <p className="text-xs text-gray-500 truncate">{wifi.strength}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{wifi.strength}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Power Metrics */}
-          <div className="grid grid-cols-4 gap-3 bg-gray-50 rounded-lg p-4">
+          <div className="grid grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1 font-medium">VERBRAUCH</p>
-              <p className="text-base font-bold text-blue-600">{formatEnergy(device.energy_consumption)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">VERBRAUCH</p>
+              <p className="text-base font-bold text-blue-600 dark:text-blue-400">{formatEnergy(device.energy_consumption)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1 font-medium">SPANNUNG</p>
-              <p className="text-base font-bold text-gray-900">{device.voltage?.toFixed(0) || 'N/A'} V</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">SPANNUNG</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100">{device.voltage?.toFixed(0) || 'N/A'} V</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1 font-medium">STROM</p>
-              <p className="text-base font-bold text-gray-900">{device.current?.toFixed(2) || 'N/A'} A</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">STROM</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100">{device.current?.toFixed(2) || 'N/A'} A</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1 font-medium">GESAMT</p>
-              <p className="text-base font-bold text-purple-600">{device.total_energy.toFixed(1)}kWh</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">GESAMT</p>
+              <p className="text-base font-bold text-purple-600 dark:text-purple-400">{device.total_energy.toFixed(1)}kWh</p>
             </div>
           </div>
 
           {/* Power Control */}
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg min-w-0">
+          <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg min-w-0">
             <div className="flex items-center space-x-2 min-w-0 flex-1">
               <PowerIcon />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-700">Power Control</p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Power Control</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   <span className="inline-flex items-center min-w-0">
                     <ClockIcon />
                     <span className="ml-1 truncate">{formatUptime(device.uptime)} • {device.firmware_version}</span>
@@ -350,7 +350,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
               variant="ghost"
               size="sm"
               onClick={() => setShowMetrics(!showMetrics)}
-              className="text-xs text-gray-500 hover:text-gray-700"
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               disabled={device.status === 'offline'}
             >
               {showMetrics ? 'Weniger anzeigen' : 'Detaillierte Messwerte'}
@@ -359,7 +359,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
 
           {/* Detailed Metrics Panel */}
           {showMetrics && (
-            <div className="border-t border-gray-100 pt-3">
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
               <DeviceMetrics 
                 deviceId={device.device_id} 
                 className=""
@@ -372,17 +372,17 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-white rounded-xl shadow-2xl">
+          <Card className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-2xl">
             <CardHeader className="pb-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-semibold text-gray-800">
+                  <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                     Gerät entfernen
                   </CardTitle>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Diese Aktion kann nicht rückgängig gemacht werden
                   </p>
                 </div>
@@ -398,19 +398,19 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                 </Alert>
               )}
               
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-700 mb-2">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                   <strong>Gerätename:</strong> {device.device_name}
                 </p>
-                <p className="text-sm text-gray-700 mb-2">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                   <strong>Geräte-ID:</strong> {device.device_id}
                 </p>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   <strong>IP-Adresse:</strong> {device.ip_address}
                 </p>
               </div>
               
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Das Gerät wird aus dem System entfernt. Alle gespeicherten Daten und Metriken 
                 zu diesem Gerät werden dauerhaft gelöscht.
               </p>
