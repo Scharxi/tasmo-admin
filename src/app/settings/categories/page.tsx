@@ -17,7 +17,8 @@ import {
   Grid3X3,
   Search,
   Filter,
-  MoreVertical
+  MoreVertical,
+  Home
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -166,7 +167,7 @@ export default function CategoriesPage() {
 
   if (categoriesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="modern-spinner"></div>
@@ -177,27 +178,33 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link href="/">
-              <Button variant="ghost" size="sm" className="gap-2 hover:bg-white/50">
+              <Button variant="ghost" size="sm" className="gap-2 hover:bg-white/50 dark:hover:bg-gray-700/50">
                 <ArrowLeft className="h-4 w-4" />
                 Zurück
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">
                 Kategorien-Verwaltung
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 Erstellen und verwalten Sie Kategorien für Ihre Tasmota-Geräte
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/">
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg px-4 py-2">
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
             <Button
               onClick={handleCreate}
               className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
@@ -215,15 +222,17 @@ export default function CategoriesPage() {
             variant={notification.type === 'error' ? 'destructive' : 'default'} 
             className={cn(
               "mb-6",
-              notification.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'
+              notification.type === 'error' 
+                ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' 
+                : 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
             )}
           >
             {notification.type === 'error' ? (
               <AlertTriangle className="h-4 w-4" />
             ) : (
-              <Tag className="h-4 w-4 text-green-600" />
+              <Tag className="h-4 w-4 text-green-600 dark:text-green-400" />
             )}
-            <AlertDescription className={notification.type === 'error' ? 'text-red-700' : 'text-green-700'}>
+            <AlertDescription className={notification.type === 'error' ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}>
               {notification.message}
             </AlertDescription>
           </Alert>
@@ -233,12 +242,12 @@ export default function CategoriesPage() {
           {/* Categories List */}
           <div className="lg:col-span-2 space-y-6">
             {/* Search and Filters */}
-            <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-xl">
+            <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700/20 shadow-xl">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Grid3X3 className="h-5 w-5 text-blue-600" />
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
                       Kategorien ({filteredCategories.length})
                     </CardTitle>
                   </div>
@@ -249,7 +258,7 @@ export default function CategoriesPage() {
                         placeholder="Kategorien suchen..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-64 bg-white/50 border-gray-200"
+                        className="pl-10 w-64 bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                       />
                     </div>
                   </div>
@@ -260,7 +269,7 @@ export default function CategoriesPage() {
                   {filteredCategories.map((category) => (
                     <div
                       key={category.id}
-                      className="group bg-white/80 rounded-xl p-4 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200"
+                      className="group bg-white/80 dark:bg-gray-800/80 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-200"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
@@ -270,7 +279,7 @@ export default function CategoriesPage() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-gray-900 truncate">
+                              <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                                 {category.name}
                               </h3>
                               {category.isDefault && (
@@ -280,12 +289,12 @@ export default function CategoriesPage() {
                               )}
                             </div>
                             {category.description && (
-                              <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
                                 {category.description}
                               </p>
                             )}
                             {'deviceCount' in category && (
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {(category as any).deviceCount} Gerät{(category as any).deviceCount !== 1 ? 'e' : ''}
                               </p>
                             )}
@@ -297,7 +306,7 @@ export default function CategoriesPage() {
                              size="sm"
                              onClick={() => handleEdit(category)}
                              disabled={isLoading}
-                             className="h-10 w-10 p-0 hover:bg-blue-50 hover:text-blue-600 text-gray-600 hover:scale-105 transition-all duration-200"
+                             className="h-10 w-10 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 text-gray-600 dark:text-gray-400 hover:scale-105 transition-all duration-200"
                              title="Kategorie bearbeiten"
                            >
                              <Edit3 className="h-5 w-5" />
@@ -308,7 +317,7 @@ export default function CategoriesPage() {
                                variant="ghost"
                                size="sm"
                                disabled={true}
-                               className="h-10 w-10 p-0 text-gray-400 cursor-not-allowed"
+                               className="h-10 w-10 p-0 text-gray-400 dark:text-gray-600 cursor-not-allowed"
                                title="Die Allgemein-Kategorie kann nicht gelöscht werden"
                              >
                                <Trash2 className="h-5 w-5" />
@@ -319,7 +328,7 @@ export default function CategoriesPage() {
                                size="sm"
                                onClick={() => handleDelete(category)}
                                disabled={isLoading}
-                               className="h-10 w-10 p-0 hover:bg-red-100 hover:text-red-700 text-red-500 hover:scale-105 transition-all duration-200 border border-transparent hover:border-red-200"
+                               className="h-10 w-10 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 text-red-500 dark:text-red-400 hover:scale-105 transition-all duration-200 border border-transparent hover:border-red-200 dark:hover:border-red-800"
                                title={category.isDefault ? "Standard-Kategorie löschen" : "Kategorie löschen"}
                              >
                                <Trash2 className="h-5 w-5" />
@@ -332,11 +341,11 @@ export default function CategoriesPage() {
                   
                   {filteredCategories.length === 0 && (
                     <div className="col-span-2 text-center py-12">
-                      <Tag className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-gray-500 mb-2">
+                      <Tag className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                      <p className="text-gray-500 dark:text-gray-400 mb-2">
                         {searchTerm ? 'Keine Kategorien gefunden' : 'Noch keine Kategorien vorhanden'}
                       </p>
-                      <p className="text-sm text-gray-400 mb-4">
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">
                         {searchTerm ? 'Versuchen Sie einen anderen Suchbegriff' : 'Erstellen Sie Ihre erste Kategorie'}
                       </p>
                       {!searchTerm && (
@@ -358,10 +367,10 @@ export default function CategoriesPage() {
 
           {/* Form Panel */}
           <div className="space-y-6">
-            <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-xl sticky top-6">
+            <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700/20 shadow-xl sticky top-6">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                     <Palette className="h-5 w-5 text-blue-600" />
                     {isCreating ? 'Neue Kategorie' : editingCategory ? 'Kategorie bearbeiten' : 'Kategorie auswählen'}
                   </CardTitle>
@@ -376,7 +385,7 @@ export default function CategoriesPage() {
                     </Button>
                   )}
                 </div>
-                <CardDescription>
+                <CardDescription className="text-gray-600 dark:text-gray-400">
                   {isCreating 
                     ? 'Erstellen Sie eine neue Kategorie für Ihre Geräte'
                     : editingCategory 
@@ -389,8 +398,8 @@ export default function CategoriesPage() {
                 {(isCreating || editingCategory) ? (
                   <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Preview */}
-                    <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200">
-                      <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                    <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
                         Vorschau:
                       </Label>
                       <div className="flex items-center gap-3">
@@ -399,11 +408,11 @@ export default function CategoriesPage() {
                           style={{ backgroundColor: formData.color }}
                         />
                         <div>
-                          <div className="font-semibold text-gray-900">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100">
                             {formData.name || 'Kategoriename'}
                           </div>
                           {formData.description && (
-                            <div className="text-sm text-gray-600 mt-1">
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                               {formData.description}
                             </div>
                           )}
@@ -413,7 +422,7 @@ export default function CategoriesPage() {
 
                     {/* Name Input */}
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-sm font-medium">
+                      <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Name *
                       </Label>
                       <Input
@@ -422,14 +431,14 @@ export default function CategoriesPage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="z.B. Smart Home, Küchengeräte..."
                         maxLength={50}
-                        className="bg-white/50 border-gray-300 focus:border-blue-500"
+                        className="bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                         required
                       />
                     </div>
 
                     {/* Color Picker */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Farbe *
                       </Label>
                       <ColorPicker
@@ -440,7 +449,7 @@ export default function CategoriesPage() {
 
                     {/* Description */}
                     <div className="space-y-2">
-                      <Label htmlFor="description" className="text-sm font-medium">
+                      <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Beschreibung (optional)
                       </Label>
                       <Input
@@ -449,7 +458,7 @@ export default function CategoriesPage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                         placeholder="Beschreibung der Kategorie..."
                         maxLength={200}
-                        className="bg-white/50 border-gray-300 focus:border-blue-500"
+                        className="bg-white/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                       />
                     </div>
 
@@ -476,8 +485,8 @@ export default function CategoriesPage() {
                   </form>
                 ) : (
                   <div className="text-center py-12">
-                    <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500 mb-4">
+                    <Settings className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
                       Wählen Sie eine Kategorie zum Bearbeiten aus oder erstellen Sie eine neue.
                     </p>
                     <Button
