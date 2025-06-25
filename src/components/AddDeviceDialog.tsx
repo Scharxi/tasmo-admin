@@ -147,7 +147,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+              <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -155,17 +155,17 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                 <DeviceIcon />
               </div>
               <div>
-                <CardTitle className="text-xl font-bold text-gray-800">
+                <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200">
                   Add Tasmota Device
                 </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Enter IP address to automatically detect device information
                 </p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -177,9 +177,9 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
         <CardContent className="space-y-6">
           {/* Success Alert */}
           {success && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700">
+            <Alert className="border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-700 dark:text-green-300">
                 {success}
               </AlertDescription>
             </Alert>
@@ -187,9 +187,9 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
 
           {/* Error Alert */}
           {error && (
-            <Alert variant="destructive" className="border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-red-700">
+            <Alert variant="destructive" className="border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription className="text-red-700 dark:text-red-300">
                 {error}
               </AlertDescription>
             </Alert>
@@ -197,10 +197,10 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
 
           {/* Manual IP Entry */}
           <div>
-            <h3 className="font-semibold text-gray-800 mb-4">Manual Entry</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Manual Entry</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   IP Address *
                 </label>
                 <div className="flex space-x-2">
@@ -213,7 +213,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                       setSuccess(null)
                       setDeviceInfo(null)
                     }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., 192.168.1.100"
                     required
                   />
@@ -234,41 +234,41 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
 
               {/* Device Information Preview */}
               {deviceInfo && (
-                <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                  <h4 className="font-semibold text-green-900 mb-3">Device Information</h4>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-700">
+                  <h4 className="font-semibold text-green-900 dark:text-green-200 mb-3">Device Information</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="font-medium text-green-800">Device Name:</span>
-                      <p className="text-green-700">{deviceInfo.device_name}</p>
+                      <span className="font-medium text-green-800 dark:text-green-300">Device Name:</span>
+                      <p className="text-green-700 dark:text-green-200">{deviceInfo.device_name}</p>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800">Device ID:</span>
-                      <p className="text-green-700">{deviceInfo.device_id}</p>
+                      <span className="font-medium text-green-800 dark:text-green-300">Device ID:</span>
+                      <p className="text-green-700 dark:text-green-200">{deviceInfo.device_id}</p>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800">MAC Address:</span>
-                      <p className="text-green-700">{deviceInfo.mac_address || 'N/A'}</p>
+                      <span className="font-medium text-green-800 dark:text-green-300">MAC Address:</span>
+                      <p className="text-green-700 dark:text-green-200">{deviceInfo.mac_address || 'N/A'}</p>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800">Firmware:</span>
-                      <p className="text-green-700">{deviceInfo.firmware_version}</p>
+                      <span className="font-medium text-green-800 dark:text-green-300">Firmware:</span>
+                      <p className="text-green-700 dark:text-green-200">{deviceInfo.firmware_version}</p>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800">Status:</span>
-                      <Badge className={deviceInfo.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      <span className="font-medium text-green-800 dark:text-green-300">Status:</span>
+                      <Badge className={deviceInfo.status === 'online' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}>
                         {deviceInfo.status}
                       </Badge>
                     </div>
                     <div>
-                      <span className="font-medium text-green-800">Power:</span>
-                      <Badge className={deviceInfo.power_state ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}>
+                      <span className="font-medium text-green-800 dark:text-green-300">Power:</span>
+                      <Badge className={deviceInfo.power_state ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}>
                         {deviceInfo.power_state ? 'ON' : 'OFF'}
                       </Badge>
                     </div>
                   </div>
                   
                   {/* Critical Device Checkbox */}
-                  <div className="mt-4 pt-3 border-t border-green-200">
+                  <div className="mt-4 pt-3 border-t border-green-200 dark:border-green-700">
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         checked={isCritical}
@@ -276,20 +276,20 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                         className="border-amber-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                       />
                       <label
-                        className="text-sm font-medium text-green-800 flex items-center space-x-1 cursor-pointer"
+                        className="text-sm font-medium text-green-800 dark:text-green-300 flex items-center space-x-1 cursor-pointer"
                       >
                         <AlertTriangle className="h-4 w-4 text-amber-500" />
                         <span>Als kritisches Gerät markieren</span>
                       </label>
                     </div>
-                    <p className="text-xs text-green-600 mt-1 ml-6">
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 ml-6">
                       Kritische Geräte erfordern eine zusätzliche Bestätigung beim Ausschalten
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   type="button"
                   onClick={handleClose}
