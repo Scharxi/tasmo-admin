@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, CheckCircle, Search } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { AlertCircle, CheckCircle, Search, AlertTriangle } from 'lucide-react'
 import { tasmotaAPI, CreateDeviceRequest, TasmotaDevice } from '@/lib/api'
 
 const PlusIcon = () => (
@@ -37,6 +38,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [discoveredDevices, setDiscoveredDevices] = useState<any[]>([])
+  const [isCritical, setIsCritical] = useState(false)
 
   const handleFetchDeviceInfo = async () => {
     if (!ipAddress.trim()) {
@@ -73,7 +75,13 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
     setSuccess(null)
 
     try {
-      await tasmotaAPI.createDevice({ ipAddress: deviceInfo.ip_address })
+      const newDevice = await tasmotaAPI.createDevice({ ipAddress: deviceInfo.ip_address })
+      
+      // Set critical status if specified
+      if (isCritical) {
+        await tasmotaAPI.setCriticalStatus(newDevice.device_id, true)
+      }
+      
       setSuccess('Device added successfully! Redirecting to dashboard...')
       
       // Navigate to dashboard after success
@@ -86,6 +94,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
       // Reset form
       setIpAddress('')
       setDeviceInfo(null)
+      setIsCritical(false)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to add device')
     } finally {
@@ -126,6 +135,7 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
     setError(null)
     setSuccess(null)
     setDiscoveredDevices([])
+    setIsCritical(false)
   }
 
   const handleClose = () => {
@@ -255,6 +265,26 @@ export function AddDeviceDialog({ isOpen, onClose, onDeviceAdded }: AddDeviceDia
                         {deviceInfo.power_state ? 'ON' : 'OFF'}
                       </Badge>
                     </div>
+                  </div>
+                  
+                  {/* Critical Device Checkbox */}
+                  <div className="mt-4 pt-3 border-t border-green-200">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={isCritical}
+                        onCheckedChange={(checked) => setIsCritical(checked as boolean)}
+                        className="border-amber-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                      />
+                      <label
+                        className="text-sm font-medium text-green-800 flex items-center space-x-1 cursor-pointer"
+                      >
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span>Als kritisches Gerät markieren</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1 ml-6">
+                      Kritische Geräte erfordern eine zusätzliche Bestätigung beim Ausschalten
+                    </p>
                   </div>
                 </div>
               )}
