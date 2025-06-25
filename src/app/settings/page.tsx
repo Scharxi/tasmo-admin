@@ -8,8 +8,27 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { AlertCircle, Settings, Database, Clock, HardDrive, Save, RefreshCw, Trash2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { 
+  AlertCircle, 
+  Settings, 
+  Database, 
+  Clock, 
+  HardDrive, 
+  Save, 
+  RefreshCw, 
+  Trash2,
+  Shield,
+  ChevronRight,
+  Smartphone,
+  Monitor,
+  Zap,
+  ArrowLeft,
+  Home
+} from 'lucide-react'
 import { useDevices } from '@/hooks/useDevices'
+import { SecuritySettings } from '@/components/SecuritySettings'
+import Link from 'next/link'
 
 interface GlobalLoggingConfig {
   enableDataLogging: boolean
@@ -89,12 +108,10 @@ export default function SettingsPage() {
                 recordCount: storageData?.actualStorage?.recordCount || 0
               }
             } else {
-              // Error loading config - don't use fallback values
               throw new Error(`Failed to load config for ${device.device_id}`)
             }
           } catch (err) {
             console.error(`Error loading config for ${device.device_id}:`, err)
-            // Return minimal config for error cases
             return {
               deviceId: device.device_id,
               deviceName: device.device_name,
@@ -192,6 +209,10 @@ export default function SettingsPage() {
       
       await Promise.all(cleanupPromises)
       
+      // Reload data after cleanup
+      await loadDeviceConfigs()
+      await loadStorageData()
+      
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
@@ -201,310 +222,400 @@ export default function SettingsPage() {
     }
   }
 
-
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <Settings className="h-8 w-8" />
-          Data Logging Settings
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Configure how measurement data is stored across all devices
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Header */}
+        <div className="mb-8">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Link href="/">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300 transition-colors duration-200"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <Home className="h-4 w-4" />
+                <span>Zurück zum Dashboard</span>
+              </Button>
+            </Link>
+          </div>
 
-      {/* Status Messages */}
-      {success && (
-        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-4 rounded-md mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <span>Settings updated successfully!</span>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg">
+              <Settings className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Einstellungen</h1>
+              <p className="text-gray-600 mt-1">System- und Sicherheitskonfiguration</p>
+            </div>
+          </div>
         </div>
-      )}
-      
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-md mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Global Settings */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Global Settings
-              </CardTitle>
-              <CardDescription>
-                Apply these settings to all devices at once
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Enable Data Logging</Label>
-                  <p className="text-sm text-gray-600">
-                    Store historical measurement data for all devices
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">
-                    {globalConfig.enableDataLogging ? 'Enabled' : 'Disabled'}
-                  </span>
+        <Tabs defaultValue="security" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+            <TabsTrigger value="security" className="flex items-center gap-2 rounded-lg">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Sicherheit</span>
+            </TabsTrigger>
+            <TabsTrigger value="logging" className="flex items-center gap-2 rounded-lg">
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">Datenlogging</span>
+            </TabsTrigger>
+            <TabsTrigger value="storage" className="flex items-center gap-2 rounded-lg">
+              <HardDrive className="h-4 w-4" />
+              <span className="hidden sm:inline">Speicher</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Security Tab */}
+          <TabsContent value="security" className="space-y-6">
+            <SecuritySettings />
+          </TabsContent>
+
+          {/* Logging Tab */}
+          <TabsContent value="logging" className="space-y-6">
+            {/* Global Settings Card */}
+            <Card className="border-2 border-green-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-md">
+                    <Database className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <span>Globale Logging-Einstellungen</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge 
+                        variant={globalConfig.enableDataLogging ? "default" : "secondary"}
+                        className={`text-xs font-medium ${
+                          globalConfig.enableDataLogging 
+                            ? 'bg-green-100 text-green-800 border-green-300' 
+                            : 'bg-gray-100 text-gray-600 border-gray-300'
+                        }`}
+                      >
+                        {globalConfig.enableDataLogging ? 'Aktiviert' : 'Deaktiviert'}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  Diese Einstellungen werden auf alle Geräte angewendet
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Enable Logging Toggle */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                  <div className="space-y-1">
+                    <Label className="text-base font-semibold text-gray-800">
+                      Datenlogging aktivieren
+                    </Label>
+                    <p className="text-sm text-gray-600">
+                      Sammlung von Gerätedaten für Analyse und Monitoring
+                    </p>
+                  </div>
                   <Switch
                     checked={globalConfig.enableDataLogging}
-                    onCheckedChange={(checked) => setGlobalConfig(prev => ({ ...prev, enableDataLogging: checked }))}
-                    disabled={saving}
+                    onCheckedChange={(checked) => 
+                      setGlobalConfig(prev => ({ ...prev, enableDataLogging: checked }))
+                    }
+                    className="data-[state=checked]:bg-green-600"
                   />
                 </div>
-              </div>
 
-              {globalConfig.enableDataLogging && (
-                <>
-                  <Separator />
-                  
-                  <div className="grid grid-cols-2 gap-4">
+                {globalConfig.enableDataLogging && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Retention Days */}
                     <div className="space-y-2">
-                      <Label>Data Retention (Days)</Label>
+                      <Label htmlFor="retention" className="text-sm font-medium text-gray-700">
+                        Aufbewahrungsdauer (Tage)
+                      </Label>
                       <Input
+                        id="retention"
                         type="number"
-                        min="1"
-                        max="365"
+                        min={1}
+                        max={365}
                         value={globalConfig.dataRetentionDays}
-                        onChange={(e) => setGlobalConfig(prev => ({ 
-                          ...prev, 
-                          dataRetentionDays: parseInt(e.target.value) || 30 
-                        }))}
-                        disabled={saving}
+                        onChange={(e) => 
+                          setGlobalConfig(prev => ({ 
+                            ...prev, 
+                            dataRetentionDays: Math.max(1, parseInt(e.target.value) || 1)
+                          }))
+                        }
+                        className="bg-white border-gray-300"
                       />
                     </div>
 
+                    {/* Log Interval */}
                     <div className="space-y-2">
-                      <Label>Min Log Interval (Seconds)</Label>
+                      <Label htmlFor="interval" className="text-sm font-medium text-gray-700">
+                        Log-Intervall (Sekunden)
+                      </Label>
                       <Input
+                        id="interval"
                         type="number"
-                        min="10"
-                        max="3600"
+                        min={10}
+                        max={3600}
                         value={globalConfig.minLogInterval}
-                        onChange={(e) => setGlobalConfig(prev => ({ 
-                          ...prev, 
-                          minLogInterval: parseInt(e.target.value) || 60 
-                        }))}
-                        disabled={saving}
+                        onChange={(e) => 
+                          setGlobalConfig(prev => ({ 
+                            ...prev, 
+                            minLogInterval: Math.max(10, parseInt(e.target.value) || 60)
+                          }))
+                        }
+                        className="bg-white border-gray-300"
                       />
                     </div>
                   </div>
-                </>
-              )}
+                )}
 
-              <div className="flex gap-3 pt-4">
-                <Button 
+                {/* Status Messages */}
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="flex items-center gap-2 text-red-700">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-medium">{error}</span>
+                    </div>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <RefreshCw className="h-4 w-4" />
+                      <span className="font-medium">Einstellungen erfolgreich angewendet</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Apply Button */}
+                <Button
                   onClick={applyGlobalSettings}
                   disabled={saving}
-                  className="flex items-center gap-2"
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-3 rounded-xl shadow-lg border border-green-700 transition-all duration-300"
                 >
                   {saving ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Anwenden...</span>
+                    </div>
                   ) : (
-                    <Save className="h-4 w-4" />
+                    <div className="flex items-center gap-2">
+                      <Save className="h-4 w-4" />
+                      <span>Auf alle Geräte anwenden</span>
+                    </div>
                   )}
-                  Apply to All Devices
                 </Button>
-                
-                <Button 
-                  variant="outline"
-                  onClick={loadDeviceConfigs}
-                  disabled={saving}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Individual Device Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HardDrive className="h-5 w-5" />
-                Individual Device Settings
-              </CardTitle>
-              <CardDescription>
-                Fine-tune settings for each device
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {deviceConfigs.map((device) => (
-                  <div key={device.deviceId} className="border rounded-lg p-4 bg-white shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{device.deviceName}</h4>
-                        <p className="text-sm text-gray-500">{device.deviceId}</p>
+            {/* Device Specific Settings */}
+            {deviceConfigs.length > 0 && (
+              <Card className="border-2 border-blue-100 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
+                      <Monitor className="h-6 w-6" />
+                    </div>
+                    Gerätespezifische Einstellungen
+                  </CardTitle>
+                  <CardDescription>
+                    Individuelle Konfiguration für jedes Gerät
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {deviceConfigs.map((device) => (
+                    <div
+                      key={device.deviceId}
+                      className="p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-lg">
+                            <Zap className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-800">{device.deviceName}</h4>
+                            <p className="text-sm text-gray-500">{device.deviceId}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={device.enableDataLogging ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {device.enableDataLogging ? 'Aktiv' : 'Inaktiv'}
+                          </Badge>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-700">
-                          {device.enableDataLogging ? 'Active' : 'Inactive'}
-                        </span>
-                        <Switch
-                          checked={device.enableDataLogging}
-                          onCheckedChange={(checked) => updateDeviceConfig(device.deviceId, { enableDataLogging: checked })}
-                        />
-                        <Badge variant={device.enableDataLogging ? "default" : "secondary"}>
-                          {device.enableDataLogging ? "Enabled" : "Disabled"}
-                        </Badge>
+
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Logging</span>
+                          <Switch
+                            checked={device.enableDataLogging}
+                            onCheckedChange={(checked) => 
+                              updateDeviceConfig(device.deviceId, { enableDataLogging: checked })
+                            }
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-500">Aufbewahrung (Tage)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={device.dataRetentionDays}
+                            onChange={(e) => 
+                              updateDeviceConfig(device.deviceId, { 
+                                dataRetentionDays: Math.max(1, parseInt(e.target.value) || 1)
+                              })
+                            }
+                            className="h-8 text-sm"
+                            disabled={!device.enableDataLogging}
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-500">Intervall (s)</Label>
+                          <Input
+                            type="number"
+                            min={10}
+                            max={3600}
+                            value={device.minLogInterval}
+                            onChange={(e) => 
+                              updateDeviceConfig(device.deviceId, { 
+                                minLogInterval: Math.max(10, parseInt(e.target.value) || 60)
+                              })
+                            }
+                            className="h-8 text-sm"
+                            disabled={!device.enableDataLogging}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex gap-4 text-xs text-gray-500">
+                          <span>Speicher: {device.actualStorage}</span>
+                          <span>Datensätze: {device.recordCount.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
-                    
-                    {device.enableDataLogging && (
-                      <div className="grid grid-cols-3 gap-3 text-sm">
-                        <div>
-                          <Label className="text-xs">Retention (Days)</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="365"
-                            value={device.dataRetentionDays}
-                            onChange={(e) => updateDeviceConfig(device.deviceId, { 
-                              dataRetentionDays: parseInt(e.target.value) || 30 
-                            })}
-                            className="h-8 text-xs"
-                          />
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Storage Tab */}
+          <TabsContent value="storage" className="space-y-6">
+            {/* Storage Summary */}
+            {storageSummary && (
+              <Card className="border-2 border-orange-100 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+                    <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 text-white rounded-lg shadow-md">
+                      <HardDrive className="h-6 w-6" />
+                    </div>
+                    Speicherübersicht
+                  </CardTitle>
+                  <CardDescription>
+                    Aktuelle Speichernutzung und -statistiken
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500 text-white rounded-lg">
+                          <Database className="h-4 w-4" />
                         </div>
                         <div>
-                          <Label className="text-xs">Interval (Sec)</Label>
-                          <Input
-                            type="number"
-                            min="10"
-                            max="3600"
-                            value={device.minLogInterval}
-                            onChange={(e) => updateDeviceConfig(device.deviceId, { 
-                              minLogInterval: parseInt(e.target.value) || 60 
-                            })}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Storage (Actual/Est)</Label>
-                          <div className="h-8 flex items-center text-xs font-medium">
-                            <div className="text-blue-600">{device.actualStorage}</div>
-                            <span className="text-gray-500 mx-1">/</span>
-                            <div className="text-gray-600">{device.estimatedStorage}</div>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {device.recordCount.toLocaleString()} records
-                          </div>
+                          <p className="text-sm text-gray-600">Gesamtspeicher</p>
+                          <p className="text-lg font-bold text-gray-800">
+                            {storageSummary.totalActualStorage.formatted}
+                          </p>
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500 text-white rounded-lg">
+                          <Clock className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Datensätze</p>
+                          <p className="text-lg font-bold text-gray-800">
+                            {storageSummary.totalRecords.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-500 text-white rounded-lg">
+                          <Monitor className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Aktive Geräte</p>
+                          <p className="text-lg font-bold text-gray-800">
+                            {storageSummary.activeDevices} / {storageSummary.totalDevices}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-500 text-white rounded-lg">
+                          <RefreshCw className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Effizienz</p>
+                          <p className="text-lg font-bold text-gray-800">
+                            {Math.round(storageSummary.storageEfficiency * 100)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Summary & Actions */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Storage Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {storageSummary?.totalActualStorage?.formatted || '0 B'}
-                </div>
-                <p className="text-sm text-gray-600">Total actual storage</p>
-                <div className="text-sm text-gray-500 mt-1">
-                  Est: {storageSummary?.totalEstimatedStorage?.formatted || '0 B'}
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Active devices:</span>
-                  <span className="font-medium">
-                    {storageSummary?.activeDevices || 0} / {storageSummary?.totalDevices || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total records:</span>
-                  <span className="font-medium">
-                    {storageSummary?.totalRecords?.toLocaleString() || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg retention:</span>
-                  <span className="font-medium">
-                    {storageSummary?.averageRetentionDays || 0} days
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Avg interval:</span>
-                  <span className="font-medium">
-                    {storageSummary?.averageIntervalSeconds || 0}s
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Storage efficiency:</span>
-                  <span className="font-medium">
-                    {Math.round((storageSummary?.storageEfficiency || 0) * 100)}%
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trash2 className="h-5 w-5" />
-                Maintenance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                variant="outline"
-                onClick={cleanupOldData}
-                disabled={saving}
-                className="w-full flex items-center gap-2"
-              >
-                {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-                Cleanup Old Data
-              </Button>
-              <p className="text-xs text-gray-600 mt-2">
-                Remove data older than retention settings
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+                  {/* Cleanup Section */}
+                  <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Trash2 className="h-5 w-5 text-red-600" />
+                      <h3 className="font-semibold text-red-800">Datenbereinigung</h3>
+                    </div>
+                    <p className="text-sm text-red-700 mb-4">
+                      Entfernt abgelaufene Daten basierend auf den Aufbewahrungsrichtlinien jedes Geräts.
+                    </p>
+                    <Button
+                      onClick={cleanupOldData}
+                      disabled={saving}
+                      variant="destructive"
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+                    >
+                      {saving ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Bereinigung läuft...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Trash2 className="h-4 w-4" />
+                          <span>Alte Daten bereinigen</span>
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
