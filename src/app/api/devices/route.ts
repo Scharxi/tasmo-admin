@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
       voltage: device.voltage,
       current: device.current,
       last_seen: device.lastSeen.toISOString(),
+      is_critical: device.isCritical,
       category: device.category ? {
         id: device.category.id,
         name: device.category.name,
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
       voltage: device.voltage,
       current: device.current,
       last_seen: device.lastSeen.toISOString(),
+      is_critical: device.isCritical,
       category: device.category ? {
         id: device.category.id,
         name: device.category.name,

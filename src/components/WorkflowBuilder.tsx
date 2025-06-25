@@ -21,6 +21,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Power,
   PowerOff,
   ArrowLeft,
@@ -579,22 +580,55 @@ export function WorkflowBuilder() {
                                     <SelectValue placeholder="Gerät auswählen" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {devices.map((device) => (
-                                      <SelectItem key={device.device_id} value={device.device_id}>
-                                        {device.device_name}
-                                      </SelectItem>
-                                    ))}
+                                    {devices
+                                      .filter((device) => {
+                                        // Filter out critical devices for TURN_OFF actions
+                                        if (step.action === 'TURN_OFF' && device.is_critical) {
+                                          return false
+                                        }
+                                        return true
+                                      })
+                                      .map((device) => (
+                                        <SelectItem key={device.device_id} value={device.device_id}>
+                                          <div className="flex items-center gap-2">
+                                            {device.device_name}
+                                            {device.is_critical && (
+                                              <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                                Kritisch
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
                                   </SelectContent>
                                 </Select>
+                                
+                                {/* Show warning if selected device is critical and action is TURN_OFF */}
+                                {step.deviceId && step.action === 'TURN_OFF' && 
+                                 devices.find(d => d.device_id === step.deviceId)?.is_critical && (
+                                  <Alert className="mt-2 border-amber-200 bg-amber-50">
+                                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                    <AlertDescription className="text-amber-800 text-sm">
+                                      Kritische Geräte können nicht über Workflows ausgeschaltet werden.
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
                               </div>
 
                               <div>
                                 <Label>Aktion</Label>
                                 <Select
                                   value={step.action}
-                                  onValueChange={(value: 'TURN_ON' | 'TURN_OFF' | 'DELAY') => 
+                                  onValueChange={(value: 'TURN_ON' | 'TURN_OFF' | 'DELAY') => {
                                     updateStep(step.id, { action: value })
-                                  }
+                                    // Clear device selection if switching to TURN_OFF and current device is critical
+                                    if (value === 'TURN_OFF' && step.deviceId) {
+                                      const selectedDevice = devices.find(d => d.device_id === step.deviceId)
+                                      if (selectedDevice?.is_critical) {
+                                        updateStep(step.id, { deviceId: '' })
+                                      }
+                                    }
+                                  }}
                                 >
                                   <SelectTrigger className="mt-1">
                                     <SelectValue />
@@ -620,6 +654,13 @@ export function WorkflowBuilder() {
                                     </SelectItem>
                                   </SelectContent>
                                 </Select>
+                                
+                                {/* Show info about critical devices restriction */}
+                                {step.action === 'TURN_OFF' && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Kritische Geräte werden nicht angezeigt
+                                  </p>
+                                )}
                               </div>
                             </div>
 
