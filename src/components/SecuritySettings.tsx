@@ -105,21 +105,21 @@ export function SecuritySettings() {
     return (
       <Card className="animate-pulse">
         <CardHeader className="space-y-2">
-          <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="h-10 bg-gray-200 rounded"></div>
-          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="border-2 border-blue-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="border-2 border-blue-100 dark:border-blue-800 shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800">
+        <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-gray-200">
           <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-md">
             <Shield className="h-6 w-6" />
           </div>
@@ -130,14 +130,14 @@ export function SecuritySettings() {
                 variant={config.isEnabled ? "default" : "secondary"}
                 className={`text-xs font-medium ${
                   config.isEnabled 
-                    ? 'bg-green-100 text-green-800 border-green-300' 
-                    : 'bg-gray-100 text-gray-600 border-gray-300'
+                    ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-600 dark:text-white dark:border-green-600' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600'
                 }`}
               >
                 {config.isEnabled ? 'Aktiviert' : 'Deaktiviert'}
               </Badge>
               {config.hasPassword && (
-                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800">
                   <Lock className="h-3 w-3 mr-1" />
                   Passwort gesetzt
                 </Badge>
@@ -148,12 +148,12 @@ export function SecuritySettings() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
           <div className="space-y-1">
-            <Label className="text-base font-semibold text-gray-800">
+            <Label className="text-base font-semibold text-gray-800 dark:text-gray-200">
               Passwort-Schutz für kritische Steckdosen
             </Label>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Zusätzliche Sicherheit beim Ausschalten kritischer Geräte
             </p>
           </div>
@@ -165,15 +165,15 @@ export function SecuritySettings() {
         </div>
 
         {config.isEnabled && !config.hasPassword && (
-          <div className="space-y-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <div className="flex items-center gap-2 text-amber-700 font-medium">
+          <div className="space-y-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-medium">
               <Lock className="h-4 w-4" />
               <span>Passwort festlegen</span>
             </div>
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="new-password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Neues Passwort
                 </Label>
                 <div className="relative">
@@ -183,7 +183,7 @@ export function SecuritySettings() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Mindestens 4 Zeichen"
-                    className="pr-12"
+                    className="pr-12 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   />
                   <Button
                     type="button"
@@ -193,16 +193,16 @@ export function SecuritySettings() {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     )}
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="confirm-password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Passwort bestätigen
                 </Label>
                 <div className="relative">
@@ -212,7 +212,7 @@ export function SecuritySettings() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Passwort wiederholen"
-                    className="pr-12"
+                    className="pr-12 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   />
                   <Button
                     type="button"
@@ -222,9 +222,9 @@ export function SecuritySettings() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     )}
                   </Button>
                 </div>
@@ -234,18 +234,18 @@ export function SecuritySettings() {
         )}
 
         {config.isEnabled && config.hasPassword && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-            <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+          <div className="p-4 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-600 rounded-xl">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-100 font-medium mb-2">
               <CheckCircle className="h-4 w-4" />
               <span>Passwort-Schutz aktiv</span>
             </div>
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-green-600 dark:text-green-100">
               Beim Ausschalten kritischer Steckdosen wird eine Passwort-Eingabe erforderlich.
             </p>
             <Button
               variant="outline"
               size="sm"
-              className="mt-3 border-green-300 text-green-700 hover:bg-green-100"
+              className="mt-3 border-green-300 dark:border-green-600 text-green-700 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-600/80"
               onClick={() => setConfig(prev => ({ ...prev, hasPassword: false }))}
             >
               Passwort ändern
@@ -254,14 +254,14 @@ export function SecuritySettings() {
         )}
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600 font-medium">{error}</p>
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-300 font-medium">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-600 font-medium">
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <p className="text-sm text-green-600 dark:text-green-300 font-medium">
               Sicherheitseinstellungen erfolgreich gespeichert
             </p>
           </div>
