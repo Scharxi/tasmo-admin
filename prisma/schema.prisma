@@ -26,6 +26,9 @@ model Device {
   voltage           Float?
   current           Float?
   
+  // Critical device marking
+  isCritical        Boolean  @default(false) @map("is_critical")
+  
   // Custom category relationship
   categoryId        String?  @map("category_id")
   category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
