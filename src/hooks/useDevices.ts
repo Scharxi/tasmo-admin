@@ -304,4 +304,44 @@ export function useUpdateDeviceSettings() {
       queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
     },
   })
+}
+
+// Hook für das Aktualisieren des Critical-Status eines Geräts
+export function useUpdateDeviceCritical() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ deviceId, isCritical }: { 
+      deviceId: string; 
+      isCritical: boolean; 
+    }) => {
+      const response = await fetch(`/api/devices/${deviceId}/critical`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isCritical }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update critical status')
+      }
+
+      return await response.json()
+    },
+    onSuccess: (updatedDevice) => {
+      // Update device in cache
+      const currentDevices = queryClient.getQueryData<TasmotaDevice[]>(deviceKeys.lists())
+      if (currentDevices) {
+        const updatedDevices = currentDevices.map(device => 
+          device.device_id === updatedDevice.device_id ? updatedDevice : device
+        )
+        queryClient.setQueryData<TasmotaDevice[]>(deviceKeys.lists(), updatedDevices)
+      }
+      
+      // Also invalidate to be safe
+      queryClient.invalidateQueries({ queryKey: deviceKeys.lists() })
+    },
+  })
 } 
