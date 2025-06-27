@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,41 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>('ldap');
+  const [authMode, setAuthMode] = useState<AuthMode>('admin');
+  const [ldapEnabled, setLdapEnabled] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const { toast } = useToast();
+
+  // Check LDAP status on component mount
+  useEffect(() => {
+    const checkLdapStatus = async () => {
+      try {
+        const response = await fetch('/api/ldap/status');
+        if (response.ok) {
+          const data = await response.json();
+          setLdapEnabled(data.enabled);
+          
+          // Set default auth mode based on LDAP availability
+          if (data.enabled) {
+            setAuthMode('ldap'); // Default to LDAP if available
+          } else {
+            setAuthMode('admin'); // Fall back to admin if LDAP is disabled
+          }
+        }
+      } catch (error) {
+        console.error('Error checking LDAP status:', error);
+        setLdapEnabled(false);
+        setAuthMode('admin'); // Default to admin on error
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+
+    checkLdapStatus();
+  }, []); // Remove authMode dependency to avoid infinite loop
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,10 +106,41 @@ export default function SignInPage() {
   };
 
   const switchAuthMode = (mode: AuthMode) => {
+    // Don't allow switching to LDAP if it's not enabled
+    if (mode === 'ldap' && !ldapEnabled) {
+      toast({
+        title: "LDAP nicht verfügbar",
+        description: "LDAP-Authentifizierung ist deaktiviert.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setAuthMode(mode);
     setUsername("");
     setPassword("");
   };
+
+  // Show loading state while checking LDAP status
+  if (statusLoading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-slate-900 dark:to-indigo-950">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+          <Card className="shadow-2xl border-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center space-x-3">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                  Lade Authentifizierungsoptionen...
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-slate-900 dark:to-indigo-950">
@@ -129,14 +190,20 @@ export default function SignInPage() {
               type="button"
               variant={authMode === 'ldap' ? 'default' : 'ghost'}
               onClick={() => switchAuthMode('ldap')}
+              disabled={!ldapEnabled}
               className={`flex-1 h-12 text-sm font-medium rounded-lg transition-all duration-300 ${
                 authMode === 'ldap'
                   ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-700/70'
+                  : ldapEnabled
+                  ? 'text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-700/70'
+                  : 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
               }`}
             >
               <Server className="h-4 w-4 mr-2" />
               LDAP Login
+              {!ldapEnabled && (
+                <span className="ml-1 text-xs">(deaktiviert)</span>
+              )}
             </Button>
             <Button
               type="button"
@@ -152,6 +219,8 @@ export default function SignInPage() {
               Admin Login
             </Button>
           </div>
+
+
 
           {/* Login card */}
           <Card className="shadow-2xl border-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 hover:shadow-3xl hover:bg-white/80 dark:hover:bg-gray-900/80">
