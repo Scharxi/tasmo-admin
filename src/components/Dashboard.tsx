@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DeviceCard } from '@/components/DeviceCard'
 import { AddDeviceDialog } from '@/components/AddDeviceDialog'
+
 import { 
   useDevices, 
   useCategories,
@@ -316,37 +317,37 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Simplified Background - Static for better performance */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-blue-100/60 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-r from-purple-100/40 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-blue-100/60 to-transparent dark:from-blue-900/30 dark:to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-r from-purple-100/40 to-transparent dark:from-purple-900/20 dark:to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
       </div>
 
       {/* Header */}
       <header className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white/90 rounded-2xl p-6 border border-gray-200 shadow-lg backdrop-blur-sm">
+          <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl p-2.5 text-white shadow-lg">
                     <HomeIcon />
                   </div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                     Tasmota Hub
                   </h1>
-                  <p className="text-gray-600 font-medium">Smart Device Management System</p>
+                  <p className="text-gray-600 dark:text-gray-300 font-medium">Smart Device Management System</p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-4">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Sync</p>
-                  <p className="text-sm font-semibold text-gray-700">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Last Sync</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {lastUpdate.toLocaleTimeString()}
                   </p>
                 </div>
@@ -357,9 +358,10 @@ export function Dashboard() {
                   <Badge variant="outline" className="text-xs">
                     Live Updates
                   </Badge>
+    
                   <Link href="/settings">
                     <button
-                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                       title="Data Logging Settings"
                     >
                       <SettingsIcon />
@@ -367,7 +369,7 @@ export function Dashboard() {
                   </Link>
                   <button
                     onClick={forceRefresh}
-                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                     title="Force Refresh"
                   >
                     <RefreshIcon />
@@ -399,8 +401,8 @@ export function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Smart Home Dashboard</h1>
-            <p className="text-gray-600">Verwalten Sie Ihre Tasmota-Geräte nach Kategorien</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Smart Home Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300">Verwalten Sie Ihre Tasmota-Geräte nach Kategorien</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/devices/discover">
@@ -428,49 +430,49 @@ export function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Geräte Gesamt</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalDevices}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Geräte Gesamt</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalDevices}</p>
               </div>
-              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                 <SettingsIcon />
               </div>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Online</p>
-                <p className="text-2xl font-bold text-green-600">{stats.onlineDevices}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Online</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.onlineDevices}</p>
               </div>
-              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="h-8 w-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
                 <div className="h-3 w-3 bg-green-500 rounded-full"></div>
               </div>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Aktiv</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.activeDevices}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Aktiv</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.activeDevices}</p>
               </div>
-              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+              <div className="h-8 w-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
                 <div className="h-3 w-3 bg-orange-500 rounded-full animate-pulse"></div>
               </div>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Verbrauch</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.totalConsumption.toFixed(1)}W</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Verbrauch</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.totalConsumption.toFixed(1)}W</p>
               </div>
-              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
                 <EnergyIcon />
               </div>
             </div>
@@ -478,7 +480,7 @@ export function Dashboard() {
         </div>
 
         {/* Workflows Section */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200/50 p-4 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50 p-4 relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-3">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-l from-purple-300 to-blue-300 rounded-full transform translate-x-10 -translate-y-10"></div>
@@ -493,10 +495,10 @@ export function Dashboard() {
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent">
+                  <h2 className="text-lg font-bold bg-gradient-to-r from-purple-700 to-blue-700 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">
                     Workflows
                   </h2>
-                  <p className="text-xs text-gray-600">Automatisierte Aktionen für Ihre Geräte</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">Automatisierte Aktionen für Ihre Geräte</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -527,13 +529,13 @@ export function Dashboard() {
                   {workflows.slice(0, 4).map((workflow: any) => (
                     <div
                       key={workflow.id}
-                      className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-lg p-3 hover:shadow-md hover:bg-white/90 transition-all duration-200 group"
+                      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-white/50 dark:border-gray-700/50 rounded-lg p-3 hover:shadow-md hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-200 group"
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-blue-400 rounded-md flex items-center justify-center text-white text-xs font-bold">
                           W
                         </div>
-                        <h3 className="font-medium text-gray-900 group-hover:text-purple-700 transition-colors text-sm truncate">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors text-sm truncate">
                           {workflow.name}
                         </h3>
                       </div>
@@ -605,8 +607,8 @@ export function Dashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12l-7.5 7.5M3 12h18" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Keine Workflows</h3>
-                <p className="text-xs text-gray-600 mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Keine Workflows</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-3">
                   Erstellen Sie Workflows für automatisierte Aktionen
                 </p>
                 <Link href="/workflows">
@@ -664,7 +666,7 @@ export function Dashboard() {
                 <Button
                   variant="outline"
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="justify-between min-w-48 bg-white"
+                  className="justify-between min-w-48 bg-white dark:bg-gray-800"
                 >
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-gray-500" />
@@ -696,15 +698,15 @@ export function Dashboard() {
                     />
                     
                     {/* Dropdown Menu */}
-                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1 max-h-64 overflow-y-auto">
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1 max-h-64 overflow-y-auto">
                       {/* All Devices Option */}
                       <button
                         onClick={() => {
                           setSelectedCategoryId(null)
                           setShowCategoryDropdown(false)
                         }}
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 ${
-                          selectedCategoryId === null ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 ${
+                          selectedCategoryId === null ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <div className="w-3 h-3 rounded-full bg-gray-300" />
@@ -721,8 +723,8 @@ export function Dashboard() {
                               setSelectedCategoryId(category.id)
                               setShowCategoryDropdown(false)
                             }}
-                            className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 ${
-                              selectedCategoryId === category.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 ${
+                              selectedCategoryId === category.id ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             <div
@@ -736,14 +738,14 @@ export function Dashboard() {
                       {/* Uncategorized devices */}
                       {devicesByCategory.uncategorized.length > 0 && (
                         <>
-                          <div className="border-t border-gray-100 my-1" />
+                          <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                           <button
                             onClick={() => {
                               setSelectedCategoryId('uncategorized')
                               setShowCategoryDropdown(false)
                             }}
-                            className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 ${
-                              selectedCategoryId === 'uncategorized' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 ${
+                              selectedCategoryId === 'uncategorized' ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             <div className="w-3 h-3 rounded-full bg-gray-400" />
@@ -759,7 +761,7 @@ export function Dashboard() {
               {/* Category indicator with color */}
               {selectedCategoryId && (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border border-gray-200 rounded-full">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full">
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{ 
@@ -768,7 +770,7 @@ export function Dashboard() {
                           : categories.find(cat => cat.id === selectedCategoryId)?.color 
                       }}
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
                       {selectedCategoryId === 'uncategorized' 
                         ? 'Ohne Kategorie' 
                         : categories.find(cat => cat.id === selectedCategoryId)?.name
@@ -776,7 +778,7 @@ export function Dashboard() {
                     </span>
                     <button
                       onClick={() => setSelectedCategoryId(null)}
-                      className="text-gray-400 hover:text-gray-600 ml-1"
+                      className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 ml-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -804,12 +806,12 @@ export function Dashboard() {
                       className="w-4 h-4 rounded-full border border-gray-300"
                       style={{ backgroundColor: category.color }}
                     />
-                    <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{category.name}</h2>
                     <Badge variant="secondary" className="text-xs">
                       {categoryDevices.length} Gerät{categoryDevices.length !== 1 ? 'e' : ''}
                     </Badge>
                     {category.description && (
-                      <p className="text-sm text-gray-500">- {category.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">- {category.description}</p>
                     )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -832,11 +834,11 @@ export function Dashboard() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full bg-gray-400 border border-gray-300" />
-                  <h2 className="text-lg font-semibold text-gray-900">Ohne Kategorie</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Ohne Kategorie</h2>
                   <Badge variant="secondary" className="text-xs">
                     {devicesByCategory.uncategorized.length} Gerät{devicesByCategory.uncategorized.length !== 1 ? 'e' : ''}
                   </Badge>
-                  <p className="text-sm text-gray-500">- Geräte ohne zugewiesene Kategorie</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">- Geräte ohne zugewiesene Kategorie</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {devicesByCategory.uncategorized.map(device => (
@@ -867,7 +869,7 @@ export function Dashboard() {
           <div className="space-y-4">
             {/* Compact view header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {selectedCategoryId === null 
                   ? `Alle Geräte (${filteredDevices.length})`
                   : selectedCategoryId === 'uncategorized'
@@ -882,7 +884,7 @@ export function Dashboard() {
               {filteredDevices.map((device) => (
                 <div
                   key={device.device_id}
-                  className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                  className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
                 >
                   {/* Category color bar */}
                   <div 
@@ -894,7 +896,8 @@ export function Dashboard() {
                           : device.power_state
                             ? '#10b981'
                             : '#f59e0b'
-                      )
+                      ),
+                      opacity: 0.8
                     }}
                   />
                   
@@ -903,7 +906,7 @@ export function Dashboard() {
                     {/* Device name and status */}
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
-                        <h3 className="text-base font-medium text-gray-900 truncate flex-1 pr-2">
+                        <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 truncate flex-1 pr-2">
                           {device.device_name}
                         </h3>
                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -922,19 +925,19 @@ export function Dashboard() {
                       </div>
                       
                       {/* Key info */}
-                      <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                      <div className="flex items-center justify-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <span className="flex items-center space-x-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 0 1 7.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
                           </svg>
-                          <span>{device.wifi_signal}dB</span>
+                          <span className="text-gray-500 dark:text-gray-400">{device.wifi_signal}dB</span>
                         </span>
                         {device.energy_consumption > 0 && (
                           <span className="flex items-center space-x-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            <span>{device.energy_consumption > 1000 ? `${(device.energy_consumption / 1000).toFixed(1)}kW` : `${device.energy_consumption.toFixed(0)}W`}</span>
+                            <span className="text-gray-500 dark:text-gray-400">{device.energy_consumption > 1000 ? `${(device.energy_consumption / 1000).toFixed(1)}kW` : `${device.energy_consumption.toFixed(0)}W`}</span>
                           </span>
                         )}
                       </div>

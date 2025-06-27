@@ -117,20 +117,20 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
   return (
     <div className="space-y-8">
       {/* IP Range Input */}
-      <Card className="bg-white/90 rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-200">
+              <Card className="bg-white/90 dark:bg-gray-800/90 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-2 text-white shadow-lg">
               <Search className="w-full h-full" />
             </div>
             <div>
-              <div className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              <div className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">
                 Netzwerk Scan
               </div>
-              <p className="text-sm text-gray-600 font-normal mt-1">IP-Bereich für Discovery konfigurieren</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-normal mt-1">IP-Bereich für Discovery konfigurieren</p>
             </div>
           </CardTitle>
-          <CardDescription className="text-gray-600 leading-relaxed">
+          <CardDescription className="text-gray-600 dark:text-gray-400 leading-relaxed">
             Scanne ein IP-Bereich nach Tasmota-Geräten. Unterstützte Formate:
             <br />
             <span className="inline-flex items-center gap-1 mt-2">
@@ -148,7 +148,7 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
               <strong>Einzelne IP:</strong> 192.168.1.100
             </span>
             <br />
-            <span className="inline-flex items-center gap-1 mt-2 p-2 bg-blue-50 rounded-lg">
+            <span className="inline-flex items-center gap-1 mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
               <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
               <strong>Tipp:</strong> Verwende 172.25.0.100-172.25.0.102 für die Simulator-Geräte
             </span>
@@ -157,13 +157,14 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
         <CardContent className="space-y-6">
           <div className="flex gap-4">
             <div className="flex-1">
-              <Label htmlFor="ip-range">IP-Bereich</Label>
+              <Label htmlFor="ip-range" className="text-gray-700 dark:text-gray-300">IP-Bereich</Label>
               <Input
                 id="ip-range"
                 value={ipRange}
                 onChange={(e) => setIpRange(e.target.value)}
                 placeholder="192.168.1.1-192.168.1.254"
                 disabled={isScanning}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
               />
             </div>
             <div className="flex items-end gap-3">
@@ -172,7 +173,7 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
                 size="sm"
                 onClick={() => setIpRange('172.25.0.100-172.25.0.102')}
                 disabled={isScanning}
-                className="rounded-xl border-gray-300 hover:bg-gray-50 px-4 py-2"
+                className="rounded-xl border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2"
               >
                 <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
                 Simulator-Range
@@ -198,22 +199,22 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
           </div>
           
           {error && (
-            <Alert variant="destructive" className="border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-red-700">
+            <Alert variant="destructive" className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription className="text-red-700 dark:text-red-300">
                 {error}
               </AlertDescription>
             </Alert>
           )}
           
           {isScanning && scanProgress && (
-            <div className="text-sm text-blue-600 font-medium">
+            <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">
               {scanProgress}
             </div>
           )}
           
           {scanResults && (
-            <div className="flex gap-4 text-sm text-muted-foreground">
+            <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400">
               <span>{scanResults.totalScanned} IPs gescannt</span>
               <span>{scanResults.totalFound} Geräte gefunden</span>
             </div>
@@ -223,7 +224,7 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
       
       {/* Discovered Devices */}
       {discoveredDevices.length > 0 && (
-        <Card className="bg-white/95 rounded-xl border border-gray-200 shadow-md">
+        <Card className="bg-white/95 dark:bg-gray-800/95 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-3">
@@ -231,10 +232,10 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
                   <CheckCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-lg font-semibold text-gray-800">
+                  <div className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                     Gefundene Geräte ({discoveredDevices.length})
                   </div>
-                  <p className="text-sm text-gray-600 font-normal">Wähle die Geräte aus, die hinzugefügt werden sollen</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-normal">Wähle die Geräte aus, die hinzugefügt werden sollen</p>
                 </div>
               </CardTitle>
               <div className="flex gap-2">
@@ -260,7 +261,7 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
           <CardContent>
             <div className="grid gap-4">
               {discoveredDevices.map((device) => (
-                <Card key={device.device_id} className={`bg-white/95 rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 ${
+                <Card key={device.device_id} className={`bg-white/95 dark:bg-gray-800/95 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 ${
                   selectedDevices.has(device.device_id) ? 'border-green-300 bg-green-50/30' : 'border-gray-200'
                 }`}>
                   {/* Status Indicator Bar */}
@@ -282,8 +283,8 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
                           <Zap className="w-4 h-4" />
                         </div>
                         <div>
-                          <h4 className="text-base font-semibold text-gray-800">{device.device_name}</h4>
-                          <p className="text-xs text-gray-500">ID: {device.device_id}</p>
+                          <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">{device.device_name}</h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">ID: {device.device_id}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
@@ -297,15 +298,15 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
                         <div className="flex flex-col items-end space-y-1">
                           <Badge 
                             variant={device.power_state ? "default" : "secondary"}
-                            className={device.power_state ? "bg-green-100 text-green-700 border-green-200" : "bg-gray-100 text-gray-600 border-gray-200"}
+                            className={device.power_state ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"}
                           >
                             {device.power_state ? 'Aktiv' : 'Standby'}
                           </Badge>
                           <div className="text-right">
-                            <div className="text-lg font-bold text-gray-900">
+                            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
                               {device.energy_consumption.toFixed(1)}W
                             </div>
-                            <div className="text-xs text-gray-500">Verbrauch</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Verbrauch</div>
                           </div>
                         </div>
                       </div>
@@ -314,22 +315,22 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
                     {/* Network Info */}
                     <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">NETZWERK</p>
-                        <p className="font-medium text-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">NETZWERK</p>
+                        <p className="font-medium text-gray-700 dark:text-gray-300">
                           <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
                           {device.ip_address}
                         </p>
                         {device.mac_address && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
                             {device.mac_address}
                           </p>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">WIFI SIGNAL</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">WIFI SIGNAL</p>
                         <div className="flex items-center space-x-2">
-                          <Wifi className="w-4 h-4 text-gray-600" />
+                          <Wifi className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           <div>
                             <p className={`text-sm font-medium ${getWifiStrengthColor(device.wifi_signal)}`}>
                               {device.wifi_signal}dBm
@@ -340,18 +341,18 @@ export function DeviceDiscovery({ onDevicesSelected }: DeviceDiscoveryProps) {
                     </div>
 
                     {/* Power Metrics */}
-                    <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded-lg p-3">
+                    <div className="grid grid-cols-3 gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">SPANNUNG</p>
-                        <p className="text-sm font-bold text-gray-900">{device.voltage.toFixed(0)}V</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">SPANNUNG</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{device.voltage.toFixed(0)}V</p>
                       </div>
-                      <div className="text-center border-l border-r border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">STROM</p>
-                        <p className="text-sm font-bold text-gray-900">{device.current.toFixed(2)}A</p>
+                      <div className="text-center border-l border-r border-gray-200 dark:border-gray-600">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">STROM</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{device.current.toFixed(2)}A</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">FIRMWARE</p>
-                        <p className="text-sm font-bold text-blue-600">{device.firmware_version}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">FIRMWARE</p>
+                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{device.firmware_version}</p>
                       </div>
                     </div>
                   </CardContent>

@@ -104,25 +104,25 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
       <Button
         type="button"
         variant="outline"
-        className="w-full justify-start gap-3 h-10 hover:bg-gray-50 transition-colors"
+        className="w-full justify-start gap-3 h-10 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div
-          className="w-6 h-6 rounded-md border-2 border-gray-200 shadow-sm flex-shrink-0"
+          className="w-6 h-6 rounded-md border-2 border-gray-200 dark:border-gray-600 shadow-sm flex-shrink-0"
           style={{ backgroundColor: value }}
         />
         <div className="flex flex-col items-start flex-1">
-          <span className="font-mono text-sm font-medium">{value.toUpperCase()}</span>
+          <span className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">{value.toUpperCase()}</span>
         </div>
-        <Palette className="h-4 w-4 text-gray-400" />
+        <Palette className="h-4 w-4 text-gray-400 dark:text-gray-500" />
       </Button>
 
       {/* Color Picker Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-80 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 w-80 max-h-96 overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
               <Pipette className="h-4 w-4" />
               Farbwähler
             </h4>
@@ -130,7 +130,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
               variant="ghost"
               size="sm"
               onClick={handleReset}
-              className="text-gray-500 hover:text-gray-700 h-6 w-6 p-0"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 h-6 w-6 p-0"
               title="Standardfarbe"
             >
               <RotateCcw className="h-3 w-3" />
@@ -141,7 +141,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
           <div className="space-y-4">
             {/* Color Wheel/Picker */}
             <div className="flex flex-col items-center">
-              <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+              <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <HexColorPicker
                   color={tempColor}
                   onChange={handleColorChange}
@@ -155,14 +155,14 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
               {/* Color Preview and Input */}
               <div className="flex items-center gap-2 w-full">
                 <div
-                  className="w-8 h-8 rounded-md border-2 border-gray-200 shadow-sm flex-shrink-0"
+                  className="w-8 h-8 rounded-md border-2 border-gray-200 dark:border-gray-600 shadow-sm flex-shrink-0"
                   style={{ backgroundColor: tempColor }}
                 />
                 <div className="flex-1">
                   <HexColorInput
                     color={tempColor}
                     onChange={handleColorChange}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     prefixed
                     placeholder="#000000"
                   />
@@ -172,7 +172,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 
             {/* Preset Colors */}
             <div className="space-y-2">
-              <h5 className="text-xs font-medium text-gray-700">Vordefinierte Farben</h5>
+              <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300">Vordefinierte Farben</h5>
               <div className="grid grid-cols-9 gap-1">
                 {PRESET_COLORS.map((color) => (
                   <button
@@ -181,8 +181,8 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                     className={cn(
                       'w-6 h-6 rounded border-2 transition-all duration-200 hover:scale-110 hover:shadow-md relative',
                       tempColor.toLowerCase() === color.toLowerCase()
-                        ? 'border-gray-900 shadow-lg' 
-                        : 'border-gray-200 hover:border-gray-400'
+                        ? 'border-gray-900 dark:border-gray-300 shadow-lg' 
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => handlePresetClick(color)}
@@ -199,7 +199,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
             {/* Recent Colors */}
             {recentColors.length > 0 && (
               <div className="space-y-2">
-                <h5 className="text-xs font-medium text-gray-700">Zuletzt verwendet</h5>
+                <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300">Zuletzt verwendet</h5>
                 <div className="flex gap-1 flex-wrap">
                   {recentColors.map((color, index) => (
                     <button
@@ -208,8 +208,8 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
                       className={cn(
                         'w-5 h-5 rounded border-2 transition-all duration-200 hover:scale-110 hover:shadow-md relative',
                         tempColor.toLowerCase() === color.toLowerCase()
-                          ? 'border-gray-900 shadow-lg' 
-                          : 'border-gray-200 hover:border-gray-400'
+                          ? 'border-gray-900 dark:border-gray-300 shadow-lg' 
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                       )}
                       style={{ backgroundColor: color }}
                       onClick={() => handlePresetClick(color)}
@@ -225,7 +225,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-2 border-t border-gray-200">
+            <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
               <Button
                 onClick={handleApply}
                 size="sm"

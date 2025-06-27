@@ -114,11 +114,11 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
 
   if (loading) {
     return (
-      <Card className={`bg-white/90 rounded-lg border border-gray-200 ${className}`}>
+      <Card className={`bg-white/90 dark:bg-gray-800/90 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}>
         <CardContent className="p-4">
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-            <span className="text-sm text-gray-600">Loading metrics...</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Loading metrics...</span>
           </div>
         </CardContent>
       </Card>
@@ -127,9 +127,9 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
 
   if (error) {
     return (
-      <Card className={`bg-white/90 rounded-lg border border-red-200 ${className}`}>
+      <Card className={`bg-white/90 dark:bg-gray-800/90 rounded-lg border border-red-200 dark:border-red-800 ${className}`}>
         <CardContent className="p-4">
-          <div className="flex items-center space-x-2 text-red-600">
+          <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm">Error: {error}</span>
           </div>
@@ -141,12 +141,12 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
   const hasEnergyMonitoring = metrics.has_energy_monitoring !== false
 
   return (
-    <Card className={`bg-white/90 rounded-lg border border-gray-200 ${className}`}>
+    <Card className={`bg-white/90 dark:bg-gray-800/90 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}>
       <CardHeader className="pb-2 pt-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <div className="p-1 bg-blue-100 rounded">
-              <Zap className="h-3 w-3 text-blue-600" />
+          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <div className="p-1 bg-blue-100 dark:bg-blue-900 rounded">
+              <Zap className="h-3 w-3 text-blue-600 dark:text-blue-400" />
             </div>
             Detaillierte Messwerte
           </CardTitle>
@@ -156,7 +156,7 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
         </div>
         
         {metrics.message && (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {metrics.message}
           </p>
         )}
@@ -167,39 +167,39 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
         <div className="grid grid-cols-3 gap-3 text-xs">
           {/* Spannung */}
           <div className="text-center">
-            <div className="p-2 bg-yellow-50 rounded-lg border border-yellow-100">
+            <div className="p-2 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg border border-yellow-100 dark:border-yellow-800">
               <VoltageIcon />
               <div className="mt-1">
-                <div className="font-bold text-gray-900">
+                <div className="font-bold text-gray-900 dark:text-gray-100">
                   {metrics.voltage?.toFixed(1) || '0.0'}
                 </div>
-                <div className="text-gray-500">V</div>
+                <div className="text-gray-500 dark:text-gray-400">V</div>
               </div>
             </div>
           </div>
 
           {/* Strom */}
           <div className="text-center">
-            <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
               <CurrentIcon />
               <div className="mt-1">
-                <div className="font-bold text-gray-900">
+                <div className="font-bold text-gray-900 dark:text-gray-100">
                   {metrics.current?.toFixed(3) || '0.000'}
                 </div>
-                <div className="text-gray-500">A</div>
+                <div className="text-gray-500 dark:text-gray-400">A</div>
               </div>
             </div>
           </div>
 
           {/* Leistung */}
           <div className="text-center">
-            <div className="p-2 bg-green-50 rounded-lg border border-green-100">
+            <div className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-100 dark:border-green-800">
               <PowerIcon />
               <div className="mt-1">
-                <div className="font-bold text-gray-900">
+                <div className="font-bold text-gray-900 dark:text-gray-100">
                   {metrics.power?.toFixed(1) || '0.0'}
                 </div>
-                <div className="text-gray-500">W</div>
+                <div className="text-gray-500 dark:text-gray-400">W</div>
               </div>
             </div>
           </div>
@@ -207,43 +207,43 @@ export function DeviceMetrics({ deviceId, className = '' }: DeviceMetricsProps) 
 
         {/* Advanced Power Metrics (wenn verfügbar) */}
         {hasEnergyMonitoring && (
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 text-xs">
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs">
             <div className="text-center">
-              <div className="font-medium text-gray-900">
+              <div className="font-medium text-gray-900 dark:text-gray-100">
                 {metrics.apparent_power?.toFixed(1) || '0.0'} VA
               </div>
-              <div className="text-gray-500">Scheinleistung</div>
+              <div className="text-gray-500 dark:text-gray-400">Scheinleistung</div>
             </div>
             <div className="text-center">
-              <div className="font-medium text-gray-900">
+              <div className="font-medium text-gray-900 dark:text-gray-100">
                 {metrics.reactive_power?.toFixed(1) || '0.0'} var
               </div>
-              <div className="text-gray-500">Blindleistung</div>
+              <div className="text-gray-500 dark:text-gray-400">Blindleistung</div>
             </div>
             <div className="text-center">
-              <div className="font-medium text-gray-900">
+              <div className="font-medium text-gray-900 dark:text-gray-100">
                 {metrics.factor?.toFixed(2) || '0.00'}
               </div>
-              <div className="text-gray-500">Leistungsfaktor</div>
+              <div className="text-gray-500 dark:text-gray-400">Leistungsfaktor</div>
             </div>
           </div>
         )}
 
         {/* Energy Consumption Summary */}
         {(metrics.today > 0 || metrics.yesterday > 0 || hasEnergyMonitoring) && (
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="text-center bg-emerald-50 rounded p-2">
-                <div className="font-semibold text-emerald-900">
+              <div className="text-center bg-emerald-50 dark:bg-emerald-900/30 rounded p-2">
+                <div className="font-semibold text-emerald-900 dark:text-emerald-100">
                   {((metrics.today || 0) / 1000).toFixed(2)} kWh
                 </div>
-                <div className="text-emerald-600">Heute</div>
+                <div className="text-emerald-600 dark:text-emerald-400">Heute</div>
               </div>
-              <div className="text-center bg-gray-50 rounded p-2">
-                <div className="font-semibold text-gray-900">
+              <div className="text-center bg-gray-50 dark:bg-gray-700 rounded p-2">
+                <div className="font-semibold text-gray-900 dark:text-gray-100">
                   {((metrics.yesterday || 0) / 1000).toFixed(2)} kWh
                 </div>
-                <div className="text-gray-600">Gestern</div>
+                <div className="text-gray-600 dark:text-gray-400">Gestern</div>
               </div>
             </div>
           </div>

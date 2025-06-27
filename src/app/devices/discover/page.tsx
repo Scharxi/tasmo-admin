@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { DeviceDiscovery } from '@/components/device-discovery'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, AlertCircle, Home } from 'lucide-react'
 
 interface DiscoveredDevice {
   device_id: string
@@ -100,24 +100,25 @@ export default function DeviceDiscoveryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Background Elements - Same as Dashboard */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-blue-100/60 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-r from-purple-100/40 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-blue-100/60 dark:from-blue-900/30 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-r from-purple-100/40 dark:from-purple-900/20 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
       </div>
 
       {/* Header */}
       <header className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white/90 rounded-2xl p-6 border border-gray-200 shadow-lg backdrop-blur-sm">
+          <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => router.push('/')}
-                  className="rounded-xl bg-gray-100 hover:bg-gray-200"
+                  className="rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  title="Zurück zum Dashboard"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
@@ -129,13 +130,22 @@ export default function DeviceDiscoveryPage() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">
                     Geräte Discovery
                   </h1>
-                  <p className="text-gray-600 font-medium">
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">
                     Scanne dein Netzwerk nach verfügbaren Tasmota-Geräten
                   </p>
                 </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Button
+                  onClick={() => router.push('/')}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg px-4 py-2"
+                >
+                  <Home className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
               </div>
             </div>
           </div>
@@ -168,12 +178,12 @@ export default function DeviceDiscoveryPage() {
       {/* Loading overlay for adding devices */}
       {isAdding && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white/90 p-8 rounded-2xl shadow-2xl border border-gray-200 backdrop-blur-sm">
+          <div className="bg-white/90 dark:bg-gray-800/90 p-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
             <div className="flex items-center gap-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
               <div>
-                <p className="font-semibold text-gray-800">Geräte werden hinzugefügt...</p>
-                <p className="text-sm text-gray-600">Bitte warten Sie einen Moment</p>
+                <p className="font-semibold text-gray-800 dark:text-gray-200">Geräte werden hinzugefügt...</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Bitte warten Sie einen Moment</p>
               </div>
             </div>
           </div>

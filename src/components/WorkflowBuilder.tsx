@@ -27,6 +27,7 @@ import {
   ArrowLeft,
   Edit
 } from 'lucide-react'
+
 import Link from 'next/link'
 import { useDevices } from '@/hooks/useDevices'
 import { 
@@ -326,16 +327,16 @@ export function WorkflowBuilder() {
   }, [notification])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="bg-white/90 rounded-2xl p-6 border border-gray-200 shadow-lg backdrop-blur-sm">
+        <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link href="/">
                 <Button
                   variant="outline"
-                  className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                  className="border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Dashboard
@@ -345,24 +346,27 @@ export function WorkflowBuilder() {
                 <Settings className="w-full h-full" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                   Workflow Builder
                 </h1>
-                <p className="text-gray-600 font-medium">Erstellen Sie automatisierte Geräte-Sequenzen</p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium">Erstellen Sie automatisierte Geräte-Sequenzen</p>
               </div>
             </div>
             
-            <Button 
-              onClick={() => {
-                setEditingWorkflow(null)
-                setShowCreateForm(true)
-              }}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
-              size="lg"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Neuer Workflow
-            </Button>
+            <div className="flex items-center gap-3">
+
+              <Button 
+                onClick={() => {
+                  setEditingWorkflow(null)
+                  setShowCreateForm(true)
+                }}
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg"
+                size="lg"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Neuer Workflow
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -382,9 +386,9 @@ export function WorkflowBuilder() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Workflow List */}
-          <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg">
+          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                 <Zap className="w-5 h-5 text-blue-500" />
                 Verfügbare Workflows
               </CardTitle>
@@ -393,11 +397,11 @@ export function WorkflowBuilder() {
               {workflowsLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+                    <div key={i} className="h-20 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : workflows.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>Noch keine Workflows erstellt</p>
                   <p className="text-sm">Klicken Sie auf "Neuer Workflow" um zu beginnen</p>
@@ -407,11 +411,11 @@ export function WorkflowBuilder() {
                   {workflows.map((workflow) => (
                     <div
                       key={workflow.id}
-                      className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:shadow-md"
+                      className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md bg-white dark:bg-gray-800"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-gray-900">{workflow.name}</h3>
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{workflow.name}</h3>
                           <Badge variant={workflow.enabled ? "default" : "secondary"}>
                             {workflow.enabled ? 'Aktiv' : 'Inaktiv'}
                           </Badge>
@@ -470,7 +474,7 @@ export function WorkflowBuilder() {
 
           {/* Create Workflow Form */}
           {showCreateForm && (
-            <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="w-5 h-5 text-purple-500" />
