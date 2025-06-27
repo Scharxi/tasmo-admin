@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X, Edit, Save, Tag, Info, Settings } from 'lucide-react'
+import { X, Edit, Save, Tag, Info, Settings, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { TasmotaDevice } from '@/lib/api'
-import { useUpdateDeviceSettings, useUpdateDeviceCategory, useCategories } from '@/hooks/useDevices'
+import { useUpdateDeviceSettings, useUpdateDeviceCategory, useUpdateDeviceCritical, useCategories } from '@/hooks/useDevices'
 import { cn } from '@/lib/utils'
 
 // Inline Dialog Components
@@ -74,11 +75,13 @@ export function DeviceSettingsDialog({
   const [displayName, setDisplayName] = React.useState(device.device_name)
   const [description, setDescription] = React.useState(device.description || '')
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>(device.category?.id || 'none')
+  const [isCritical, setIsCritical] = React.useState(device.is_critical || false)
   const [error, setError] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState('general')
   
   const updateDeviceSettingsMutation = useUpdateDeviceSettings()
   const updateDeviceCategoryMutation = useUpdateDeviceCategory()
+  const updateDeviceCriticalMutation = useUpdateDeviceCritical()
   const { data: categories = [] } = useCategories()
 
   // Reset form when device changes or dialog opens
@@ -87,6 +90,7 @@ export function DeviceSettingsDialog({
       setDisplayName(device.device_name)
       setDescription(device.description || '')
       setSelectedCategoryId(device.category?.id || 'none')
+      setIsCritical(device.is_critical || false)
       setError(null)
       setActiveTab('general')
     }
@@ -110,6 +114,14 @@ export function DeviceSettingsDialog({
         }
       })
 
+      // Update critical status if it changed
+      if (isCritical !== device.is_critical) {
+        updatedDevice = await updateDeviceCriticalMutation.mutateAsync({
+          deviceId: device.device_id,
+          isCritical: isCritical
+        })
+      }
+
       // Then update category if it changed
       if (selectedCategoryId !== (device.category?.id || 'none')) {
         updatedDevice = await updateDeviceCategoryMutation.mutateAsync({
@@ -131,9 +143,10 @@ export function DeviceSettingsDialog({
   
   const hasChanges = displayName.trim() !== device.device_name || 
                     (description.trim() || '') !== (device.description || '') ||
-                    selectedCategoryId !== (device.category?.id || 'none')
+                    selectedCategoryId !== (device.category?.id || 'none') ||
+                    isCritical !== (device.is_critical || false)
   
-  const isLoading = updateDeviceSettingsMutation.isPending || updateDeviceCategoryMutation.isPending
+  const isLoading = updateDeviceSettingsMutation.isPending || updateDeviceCategoryMutation.isPending || updateDeviceCriticalMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -195,7 +208,33 @@ export function DeviceSettingsDialog({
                   </p>
                 </div>
 
-                
+                {/* Critical Device Switch */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="critical" className="text-sm font-medium flex items-center gap-2">
+                        <ShieldAlert className="h-4 w-4 text-amber-500" />
+                        Kritisches Gerät
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Erfordert Bestätigung beim Ausschalten
+                      </p>
+                    </div>
+                    <Switch
+                      id="critical"
+                      checked={isCritical}
+                      onCheckedChange={setIsCritical}
+                    />
+                  </div>
+                  {isCritical && (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                        <ShieldAlert className="h-3 w-3" />
+                        Dieses Gerät wird als kritisch markiert. Beim Ausschalten wird eine zusätzliche Bestätigung angefordert.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
