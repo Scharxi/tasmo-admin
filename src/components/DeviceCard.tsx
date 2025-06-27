@@ -169,7 +169,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
       <Card className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-full max-w-full flex flex-col">
         {/* Category Color Bar */}
         <div 
-          className="h-1"
+          className="h-2"
           style={{ 
             backgroundColor: device.category?.color || (
               device.status === 'offline' 
