@@ -480,7 +480,10 @@ export class TasmotaAPI {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ categoryId, description }),
+        body: JSON.stringify({ 
+          categoryId: categoryId || null,
+          description: description || null
+        }),
       })
       
       if (!response.ok) {
@@ -491,6 +494,28 @@ export class TasmotaAPI {
       return await response.json()
     } catch (error) {
       console.error('Failed to update device category:', error)
+      throw error
+    }
+  }
+
+  async updateDeviceSettings(deviceId: string, settings: { deviceName?: string; description?: string }): Promise<TasmotaDevice> {
+    try {
+      const response = await fetch(`${this.baseUrl}/devices/${deviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to update device settings:', error)
       throw error
     }
   }

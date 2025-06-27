@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DeviceMetrics } from '@/components/DeviceMetrics'
-import { DeviceCategoryDialog } from '@/components/DeviceCategoryDialog'
+import { DeviceSettingsDialog } from '@/components/DeviceSettingsDialog'
 import { CriticalPowerConfirmDialog } from '@/components/CriticalPowerConfirmDialog'
 import { PasswordDialog } from '@/components/PasswordDialog'
 import { TasmotaDevice } from '@/lib/api'
@@ -56,10 +56,11 @@ interface DeviceCardProps {
   device: TasmotaDevice
   onTogglePower: (deviceId: string) => void
   onDeleteDevice: (deviceId: string) => Promise<void>
+  onDeviceUpdated?: (device: TasmotaDevice) => void
   isLoading?: boolean
 }
 
-export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = false }: DeviceCardProps) {
+export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpdated, isLoading = false }: DeviceCardProps) {
   const [showMetrics, setShowMetrics] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -165,10 +166,10 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
 
   return (
     <>
-      <Card className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-fit max-w-full">
+      <Card className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-full max-w-full flex flex-col">
         {/* Category Color Bar */}
         <div 
-          className="h-1"
+          className="h-2"
           style={{ 
             backgroundColor: device.category?.color || (
               device.status === 'offline' 
@@ -211,25 +212,26 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                 <p className="text-xs text-gray-500 dark:text-gray-400 break-all">ID: {device.device_id}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
+            <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
               {getStatusBadge()}
-              <DeviceCategoryDialog 
+              <DeviceSettingsDialog
                 device={device}
+                onDeviceUpdated={onDeviceUpdated}
                 trigger={
                   <button
-                    className="h-7 w-7 p-1 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 hover:border-blue-200 dark:hover:border-blue-600 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
-                    title="Kategorie bearbeiten"
+                    className="h-8 w-8 p-1.5 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 hover:border-blue-200 dark:hover:border-blue-600 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                    title="Geräteeinstellungen"
                   >
-                    <Settings className="h-3.5 w-3.5" />
+                    <Settings className="h-4 w-4" />
                   </button>
                 }
               />
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="h-7 w-7 p-1 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900 hover:border-red-200 dark:hover:border-red-600 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
+                className="h-8 w-8 p-1.5 border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900 hover:border-red-200 dark:hover:border-red-600 rounded-md transition-colors duration-200 flex items-center justify-center flex-shrink-0"
                 title="Gerät entfernen"
               >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
@@ -237,14 +239,14 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-5 pt-0 px-5">
-          {/* Category Info - Always reserve space for consistent layout */}
-          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 min-h-[28px] flex items-center">
+        <CardContent className="space-y-5 pt-0 px-5 flex-1 flex flex-col">
+          {/* Category Info - Variable height for full description */}
+          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 flex items-start">
             {device.category ? (
-              <div className="flex flex-wrap gap-2 min-w-0">
+              <div className="flex flex-col gap-1.5 min-w-0 w-full">
                 <Badge 
                   variant="outline" 
-                  className="text-xs font-medium flex-shrink-0"
+                  className="text-xs font-medium flex-shrink-0 w-fit"
                   style={{ 
                     backgroundColor: `${device.category.color}15`,
                     borderColor: device.category.color,
@@ -258,7 +260,9 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
                   <span className="truncate">{device.category.name}</span>
                 </Badge>
                 {device.description && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">• {device.description}</span>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 break-words leading-relaxed">
+                    {device.description}
+                  </div>
                 )}
               </div>
             ) : (
@@ -344,28 +348,31 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, isLoading = 
             </button>
           </div>
 
-          {/* Metrics Toggle */}
-          <div className="flex justify-center pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowMetrics(!showMetrics)}
-              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              disabled={device.status === 'offline'}
-            >
-              {showMetrics ? 'Weniger anzeigen' : 'Detaillierte Messwerte'}
-            </Button>
-          </div>
-
-          {/* Detailed Metrics Panel */}
-          {showMetrics && (
-            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-              <DeviceMetrics 
-                deviceId={device.device_id} 
-                className=""
-              />
+          {/* Bottom section - Metrics */}
+          <div className="mt-auto">
+            {/* Metrics Toggle */}
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMetrics(!showMetrics)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                disabled={device.status === 'offline'}
+              >
+                {showMetrics ? 'Weniger anzeigen' : 'Detaillierte Messwerte'}
+              </Button>
             </div>
-          )}
+
+            {/* Detailed Metrics Panel */}
+            {showMetrics && (
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                <DeviceMetrics 
+                  deviceId={device.device_id} 
+                  className=""
+                />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
