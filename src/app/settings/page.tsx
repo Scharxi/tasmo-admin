@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { useDevices } from '@/hooks/useDevices'
 import { SecuritySettings } from '@/components/SecuritySettings'
+import { LdapSettings } from '@/components/LdapSettings'
 import Link from 'next/link'
 
 interface GlobalLoggingConfig {
@@ -255,10 +256,14 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="security" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
+          <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
             <TabsTrigger value="security" className="flex items-center gap-2 rounded-lg">
               <Shield className="h-4 w-4" />
               <span className="hidden sm:inline">Sicherheit</span>
+            </TabsTrigger>
+            <TabsTrigger value="ldap" className="flex items-center gap-2 rounded-lg">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">LDAP</span>
             </TabsTrigger>
             <TabsTrigger value="logging" className="flex items-center gap-2 rounded-lg">
               <Database className="h-4 w-4" />
@@ -273,6 +278,11 @@ export default function SettingsPage() {
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-6">
             <SecuritySettings />
+          </TabsContent>
+
+          {/* LDAP Tab */}
+          <TabsContent value="ldap" className="space-y-6">
+            <LdapSettings />
           </TabsContent>
 
           {/* Logging Tab */}
