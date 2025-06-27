@@ -243,10 +243,10 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
           {/* Category Info - Always reserve space for consistent layout */}
           <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 min-h-[28px] flex items-center">
             {device.category ? (
-              <div className="flex flex-wrap gap-2 min-w-0">
+              <div className="flex flex-col gap-1.5 min-w-0">
                 <Badge 
                   variant="outline" 
-                  className="text-xs font-medium flex-shrink-0"
+                  className="text-xs font-medium flex-shrink-0 w-fit"
                   style={{ 
                     backgroundColor: `${device.category.color}15`,
                     borderColor: device.category.color,
@@ -260,7 +260,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
                   <span className="truncate">{device.category.name}</span>
                 </Badge>
                 {device.description && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">• {device.description}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 break-words leading-relaxed">{device.description}</span>
                 )}
               </div>
             ) : (
