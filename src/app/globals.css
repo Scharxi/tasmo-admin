@@ -24,9 +24,6 @@
     --radius: 0.75rem;
   }
  
-
-
-  /* Dark theme */
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -57,12 +54,6 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-    /* Dark theme styles */
-  .dark {
-    color-scheme: dark;
   }
 }
 
