@@ -37,10 +37,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
       >
-        <ThemeProvider
-          defaultTheme="system"
-          storageKey="tasmota-ui-theme"
-        >
+        <ThemeProvider>
           <QueryProvider>
             {children}
             <ToastContainer />
