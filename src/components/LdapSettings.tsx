@@ -80,7 +80,14 @@ export function LdapSettings() {
       const data = await response.json()
       setSuccess(data.message || 'LDAP configuration saved successfully')
       
-      setTimeout(() => setSuccess(null), 5000)
+      // If changes require reload, show additional info
+      if (data.requiresReload) {
+        setTimeout(() => {
+          setSuccess(data.message + ' Melden Sie sich ab und wieder an, um die Änderungen zu sehen.')
+        }, 1000)
+      }
+      
+      setTimeout(() => setSuccess(null), 8000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save LDAP configuration')
     } finally {
