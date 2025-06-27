@@ -154,7 +154,18 @@ export function ToastContainer() {
       showWorkflowError,
       showWorkflowExecuting
     }
-  }, [])
+
+    // Listen for custom toast events
+    const handleToastEvent = (event: CustomEvent) => {
+      showToast(event.detail);
+    };
+
+    window.addEventListener('show-toast', handleToastEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('show-toast', handleToastEvent as EventListener);
+    };
+  }, [showToast])
 
   return (
     <>
