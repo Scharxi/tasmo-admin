@@ -56,6 +56,43 @@ async function authenticateWithLDAP(username: string, password: string): Promise
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
+      id: "admin",
+      name: "Admin Login",
+      credentials: {
+        username: {
+          label: "Username",
+          type: "text",
+          placeholder: "Enter admin username",
+        },
+        password: {
+          label: "Password",
+          type: "password",
+          placeholder: "Enter admin password",
+        },
+      },
+      async authorize(credentials: Record<"username" | "password", string> | undefined) {
+        if (!credentials?.username || !credentials?.password) {
+          return null;
+        }
+
+        // Check admin credentials from env
+        const adminUsername = process.env.ADMIN_USERNAME;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (credentials.username === adminUsername && credentials.password === adminPassword) {
+          return {
+            id: "admin",
+            name: "Administrator",
+            email: "admin@tasmota.local",
+            username: "admin",
+            role: "admin",
+          };
+        }
+
+        return null;
+      },
+    }),
+    CredentialsProvider({
       id: "ldap",
       name: "LDAP",
       credentials: {
@@ -87,6 +124,7 @@ export const authOptions: NextAuthOptions = {
               name: ldapUser.cn,
               email: ldapUser.mail,
               username: ldapUser.uid,
+              role: "user",
             };
           }
         } catch (error) {
@@ -108,12 +146,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.username = (user as any).username;
+        token.role = (user as any).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.username = token.username as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
