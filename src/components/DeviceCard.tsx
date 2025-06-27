@@ -240,8 +240,8 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
         </CardHeader>
 
         <CardContent className="space-y-5 pt-0 px-5 flex-1 flex flex-col">
-          {/* Category Info - Fixed height for consistent layout */}
-          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 h-20 flex items-start">
+          {/* Category Info - Variable height for full description */}
+          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 flex items-start">
             {device.category ? (
               <div className="flex flex-col gap-1.5 min-w-0 w-full">
                 <Badge 
@@ -260,7 +260,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
                   <span className="truncate">{device.category.name}</span>
                 </Badge>
                 {device.description && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 break-words leading-relaxed overflow-hidden h-10">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 break-words leading-relaxed">
                     {device.description}
                   </div>
                 )}
