@@ -2,13 +2,15 @@
 
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X, Edit, Save, FileText, Tag, Plus } from 'lucide-react'
+import { X, Edit, Save, Tag, Info, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TasmotaDevice } from '@/lib/api'
 import { useUpdateDeviceSettings, useUpdateDeviceCategory, useCategories } from '@/hooks/useDevices'
 import { cn } from '@/lib/utils'
@@ -26,13 +28,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background text-foreground p-6 shadow-lg duration-200 sm:rounded-lg max-h-[90vh] overflow-y-auto",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background text-foreground p-0 shadow-lg duration-200 sm:rounded-lg max-h-[85vh] overflow-hidden",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 text-foreground">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 text-foreground z-10">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -42,7 +44,7 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left px-6 py-4 border-b", className)} {...props} />
 )
 
 const DialogTitle = React.forwardRef<
@@ -71,8 +73,9 @@ export function DeviceSettingsDialog({
   const [open, setOpen] = React.useState(false)
   const [displayName, setDisplayName] = React.useState(device.device_name)
   const [description, setDescription] = React.useState(device.description || '')
-  const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>(device.category?.id || '')
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>(device.category?.id || 'none')
   const [error, setError] = React.useState<string | null>(null)
+  const [activeTab, setActiveTab] = React.useState('general')
   
   const updateDeviceSettingsMutation = useUpdateDeviceSettings()
   const updateDeviceCategoryMutation = useUpdateDeviceCategory()
@@ -83,14 +86,16 @@ export function DeviceSettingsDialog({
     if (open) {
       setDisplayName(device.device_name)
       setDescription(device.description || '')
-      setSelectedCategoryId(device.category?.id || '')
+      setSelectedCategoryId(device.category?.id || 'none')
       setError(null)
+      setActiveTab('general')
     }
   }, [open, device])
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
       setError('Display-Name ist erforderlich')
+      setActiveTab('general')
       return
     }
 
@@ -106,10 +111,10 @@ export function DeviceSettingsDialog({
       })
 
       // Then update category if it changed
-      if (selectedCategoryId !== (device.category?.id || '')) {
+      if (selectedCategoryId !== (device.category?.id || 'none')) {
         updatedDevice = await updateDeviceCategoryMutation.mutateAsync({
           deviceId: device.device_id,
-          categoryId: selectedCategoryId,
+          categoryId: selectedCategoryId === 'none' ? '' : selectedCategoryId,
           description: description.trim() || undefined
         })
       }
@@ -122,15 +127,11 @@ export function DeviceSettingsDialog({
     }
   }
 
-  const handleRemoveCategory = () => {
-    setSelectedCategoryId('')
-  }
-
-  const selectedCategory = categories.find(cat => cat.id === selectedCategoryId)
+  const selectedCategory = selectedCategoryId === 'none' ? null : categories.find(cat => cat.id === selectedCategoryId)
   
   const hasChanges = displayName.trim() !== device.device_name || 
                     (description.trim() || '') !== (device.description || '') ||
-                    selectedCategoryId !== (device.category?.id || '')
+                    selectedCategoryId !== (device.category?.id || 'none')
   
   const isLoading = updateDeviceSettingsMutation.isPending || updateDeviceCategoryMutation.isPending
 
@@ -147,245 +148,201 @@ export function DeviceSettingsDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5" />
+            <Settings className="h-5 w-5" />
             Geräteeinstellungen
           </DialogTitle>
+          <div className="text-sm text-muted-foreground">
+            {device.device_id} • {device.ip_address}
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Current Device Info */}
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <div
-                className="w-4 h-4 rounded-full border border-border"
-                style={{ 
-                  backgroundColor: device.category?.color || (
-                    device.status === 'offline' 
-                      ? '#ef4444' 
-                      : device.power_state
-                        ? '#10b981'
-                        : '#f59e0b'
-                  )
-                }}
-              />
-              <span className="font-medium text-foreground">
-                {device.device_id}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                • {device.ip_address}
-              </span>
-            </div>
-            {device.category && (
-              <div className="text-sm text-muted-foreground">
-                Kategorie: {device.category.name}
-              </div>
-            )}
-          </div>
-
-          {/* Basic Information Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Edit className="h-4 w-4" />
-              <h3 className="font-semibold">Grundlegende Informationen</h3>
-            </div>
-            
-            {/* Display Name */}
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Display-Name *</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => {
-                  setDisplayName(e.target.value)
-                  setError(null)
-                }}
-                placeholder="z.B. Küchen Kaffeemaschine"
-                maxLength={100}
-                className={error && !displayName.trim() ? "border-red-500" : ""}
-              />
-              <p className="text-xs text-muted-foreground">
-                Dies ist der Name, der in der Benutzeroberfläche angezeigt wird
-              </p>
+        <div className="flex-1 flex flex-col">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <div className="px-6 pt-4 pb-2">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="general" className="gap-2">
+                  <Info className="h-4 w-4" />
+                  Allgemein
+                </TabsTrigger>
+                <TabsTrigger value="category" className="gap-2">
+                  <Tag className="h-4 w-4" />
+                  Kategorie
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung (optional)</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Zusätzliche Informationen über dieses Gerät..."
-                maxLength={500}
-                rows={3}
-                className="resize-none"
-              />
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-muted-foreground">
-                  Kurze Beschreibung oder Notizen zu diesem Gerät
-                </p>
-                <span className="text-xs text-muted-foreground">
-                  {description.length}/500
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Category Selection Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              <h3 className="font-semibold">Kategorie</h3>
-            </div>
-
-            {/* Current Category Display */}
-            <div className="p-3 bg-muted rounded-lg">
-              <Label className="text-sm font-medium text-foreground mb-2 block">Aktuell:</Label>
-              {device.category ? (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full border border-border"
-                    style={{ backgroundColor: device.category.color }}
+            <div className="flex-1 overflow-y-auto">
+            <TabsContent value="general" className="px-6 py-4 space-y-4 m-0">
+              <div className="space-y-4">
+                {/* Display Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="displayName" className="text-sm font-medium">
+                    Display-Name *
+                  </Label>
+                  <Input
+                    id="displayName"
+                    value={displayName}
+                    onChange={(e) => {
+                      setDisplayName(e.target.value)
+                      setError(null)
+                    }}
+                    placeholder="z.B. Küchen Kaffeemaschine"
+                    maxLength={100}
+                    className={error && !displayName.trim() ? "border-destructive" : ""}
                   />
-                  <span className="font-medium text-foreground">{device.category.name}</span>
-                  {device.category.description && (
-                    <span className="text-sm text-muted-foreground">- {device.category.description}</span>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Name für die Anzeige in der Benutzeroberfläche
+                  </p>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-muted-foreground border border-border" />
-                  <span className="text-muted-foreground">Keine Kategorie zugewiesen</span>
-                </div>
-              )}
-            </div>
 
-            {/* Category Selection */}
-            <div className="space-y-2">
-              <Label>Kategorie auswählen:</Label>
-              <div className="grid gap-2 max-h-48 overflow-y-auto border rounded-lg p-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => setSelectedCategoryId(category.id)}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 relative overflow-hidden",
-                      selectedCategoryId === category.id
-                        ? "bg-primary/10 border-2 border-primary shadow-md"
-                        : "bg-muted hover:bg-muted/80 border border-border hover:border-primary/50"
-                    )}
-                  >
-                    <div
-                      className="w-4 h-4 rounded-full border border-border flex-shrink-0"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    
-                    <div className="flex-1 min-w-0 relative z-10">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "font-medium transition-colors duration-300",
-                          selectedCategoryId === category.id ? "text-foreground font-semibold" : "text-foreground"
-                        )}>
-                          {category.name}
+                
+              </div>
+            </TabsContent>
+
+            <TabsContent value="category" className="px-6 py-4 space-y-4 m-0">
+              <div className="space-y-4">
+                {/* Current Category */}
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <Label className="text-sm font-medium mb-2 block">Aktuelle Kategorie:</Label>
+                  {device.category ? (
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: device.category.color }}
+                      />
+                      <span className="font-medium">{device.category.name}</span>
+                      {device.category.description && (
+                        <span className="text-sm text-muted-foreground">
+                          • {device.category.description}
                         </span>
-                        {category.isDefault && (
-                          <Badge variant={selectedCategoryId === category.id ? "default" : "secondary"} className="text-xs">
-                            Standard
-                          </Badge>
-                        )}
-                      </div>
-                      {category.description && (
-                        <p className={cn(
-                          "text-sm truncate transition-colors duration-300",
-                          selectedCategoryId === category.id ? "text-muted-foreground font-medium" : "text-muted-foreground"
-                        )}>
-                          {category.description}
-                        </p>
                       )}
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Keine Kategorie zugewiesen</span>
+                  )}
+                </div>
 
-            {/* Remove Category Option */}
-            {selectedCategoryId && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleRemoveCategory}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Kategorie entfernen
-              </Button>
-            )}
+                {/* Category Selection */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Neue Kategorie wählen:</Label>
+                  <Select
+                    value={selectedCategoryId}
+                    onValueChange={setSelectedCategoryId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Kategorie auswählen">
+                        {selectedCategory && (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: selectedCategory.color }}
+                            />
+                            <span>{selectedCategory.name}</span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-muted-foreground" />
+                          <span>Keine Kategorie</span>
+                        </div>
+                      </SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          <div className="flex items-center gap-2 w-full">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            <span className="flex-1">{category.name}</span>
+                            {category.isDefault && (
+                              <Badge variant="secondary" className="ml-2 text-xs">
+                                Standard
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                                     {selectedCategory?.description && (
+                     <p className="text-xs text-muted-foreground mt-1">
+                       {selectedCategory.description}
+                     </p>
+                   )}
+                 </div>
+
+                 {/* Device Description */}
+                 <div className="space-y-2">
+                   <Label htmlFor="description" className="text-sm font-medium">
+                     Gerätebeschreibung
+                   </Label>
+                   <Textarea
+                     id="description"
+                     value={description}
+                     onChange={(e) => setDescription(e.target.value)}
+                     placeholder="Zusätzliche Informationen über dieses Gerät..."
+                     maxLength={200}
+                     rows={2}
+                     className="resize-none"
+                   />
+                   <div className="flex justify-between items-center">
+                     <p className="text-xs text-muted-foreground">
+                       Optional: Notizen oder Details zu diesem Gerät
+                     </p>
+                     <span className="text-xs text-muted-foreground">
+                       {description.length}/200
+                     </span>
+                   </div>
+                 </div>
+               </div>
+            </TabsContent>
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-            </div>
-          )}
-
-          {/* Preview */}
-          {hasChanges && (
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <Label className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2 block flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Vorschau:
-              </Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {selectedCategory ? (
-                    <>
-                      <div
-                        className="w-4 h-4 rounded-full border border-border"
-                        style={{ backgroundColor: selectedCategory.color }}
-                      />
-                      <span className="font-medium text-blue-900 dark:text-blue-200">{selectedCategory.name}</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-4 h-4 rounded-full bg-muted-foreground border border-border" />
-                      <span className="text-blue-700 dark:text-blue-300">Keine Kategorie</span>
-                    </>
-                  )}
-                </div>
-                <p className="font-medium text-blue-900 dark:text-blue-200">
-                  {displayName.trim() || 'Unbenanntes Gerät'}
-                </p>
-                {description.trim() && (
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    {description.trim()}
-                  </p>
-                )}
+            <div className="mx-6 mb-4">
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={!hasChanges || !displayName.trim() || isLoading}
-              className="flex-1 gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {isLoading ? 'Speichere...' : 'Speichern'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isLoading}
-            >
-              Abbrechen
-            </Button>
+          <div className="px-6 py-4 border-t bg-muted/20">
+            <div className="flex gap-3">
+              <Button
+                onClick={handleSubmit}
+                disabled={!hasChanges || !displayName.trim() || isLoading}
+                className="flex-1 gap-2"
+                size="sm"
+              >
+                <Save className="h-4 w-4" />
+                {isLoading ? 'Speichere...' : 'Änderungen speichern'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isLoading}
+                size="sm"
+              >
+                Abbrechen
+              </Button>
+            </div>
+            {hasChanges && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                {displayName.trim() && selectedCategory 
+                  ? `"${displayName.trim()}" wird der Kategorie "${selectedCategory.name}" zugeordnet`
+                  : displayName.trim() 
+                    ? `"${displayName.trim()}" wird gespeichert`
+                    : 'Änderungen werden gespeichert'
+                }
+              </p>
+            )}
           </div>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>
