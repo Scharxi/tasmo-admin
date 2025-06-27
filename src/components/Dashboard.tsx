@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DeviceCard } from '@/components/DeviceCard'
 import { AddDeviceDialog } from '@/components/AddDeviceDialog'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
+
 import { 
   useDevices, 
   useCategories,
@@ -358,7 +358,7 @@ export function Dashboard() {
                   <Badge variant="outline" className="text-xs">
                     Live Updates
                   </Badge>
-                  <ThemeToggle />
+    
                   <Link href="/settings">
                     <button
                       className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
