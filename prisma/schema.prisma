@@ -193,6 +193,17 @@ model SecurityConfig {
   @@map("security_config")
 }
 
+model LdapConfig {
+  id        String   @id @default(cuid())
+  ldapUrl   String   @map("ldap_url")
+  baseDn    String   @map("base_dn")
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("ldap_config")
+}
+
 enum ExecutionStatus {
   PENDING
   RUNNING
