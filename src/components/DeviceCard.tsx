@@ -166,7 +166,7 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
 
   return (
     <>
-      <Card className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-fit max-w-full">
+      <Card className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden h-full max-w-full flex flex-col">
         {/* Category Color Bar */}
         <div 
           className="h-1"
@@ -239,11 +239,11 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-5 pt-0 px-5">
-          {/* Category Info - Always reserve space for consistent layout */}
-          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 min-h-[28px] flex items-center">
+        <CardContent className="space-y-5 pt-0 px-5 flex-1 flex flex-col">
+          {/* Category Info - Fixed height for consistent layout */}
+          <div className="pb-3 border-b border-gray-100 dark:border-gray-700 min-w-0 h-20 flex items-start">
             {device.category ? (
-              <div className="flex flex-col gap-1.5 min-w-0">
+              <div className="flex flex-col gap-1.5 min-w-0 w-full">
                 <Badge 
                   variant="outline" 
                   className="text-xs font-medium flex-shrink-0 w-fit"
@@ -260,7 +260,9 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
                   <span className="truncate">{device.category.name}</span>
                 </Badge>
                 {device.description && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 break-words leading-relaxed">{device.description}</span>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 break-words leading-relaxed overflow-hidden h-10">
+                    {device.description}
+                  </div>
                 )}
               </div>
             ) : (
@@ -346,28 +348,31 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
             </button>
           </div>
 
-          {/* Metrics Toggle */}
-          <div className="flex justify-center pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowMetrics(!showMetrics)}
-              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              disabled={device.status === 'offline'}
-            >
-              {showMetrics ? 'Weniger anzeigen' : 'Detaillierte Messwerte'}
-            </Button>
-          </div>
-
-          {/* Detailed Metrics Panel */}
-          {showMetrics && (
-            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-              <DeviceMetrics 
-                deviceId={device.device_id} 
-                className=""
-              />
+          {/* Bottom section - Metrics */}
+          <div className="mt-auto">
+            {/* Metrics Toggle */}
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMetrics(!showMetrics)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                disabled={device.status === 'offline'}
+              >
+                {showMetrics ? 'Weniger anzeigen' : 'Detaillierte Messwerte'}
+              </Button>
             </div>
-          )}
+
+            {/* Detailed Metrics Panel */}
+            {showMetrics && (
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                <DeviceMetrics 
+                  deviceId={device.device_id} 
+                  className=""
+                />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
