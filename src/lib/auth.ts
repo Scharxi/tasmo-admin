@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import * as ldap from "ldapjs";
+import { readLdapConfig, isLdapEnabled } from "./ldap-config";
 
 interface LDAPUser {
   uid: string;
@@ -10,47 +11,59 @@ interface LDAPUser {
 }
 
 async function authenticateWithLDAP(username: string, password: string): Promise<LDAPUser | null> {
-  return new Promise((resolve) => {
-    const ldapUrl = process.env.LDAP_URL || "ldap://localhost:389";
-    const baseDn = process.env.LDAP_BASE_DN || "dc=tasmota,dc=local";
-    const userDn = `uid=${username},ou=users,${baseDn}`;
+  try {
+    // Read current LDAP configuration
+    const ldapConfig = await readLdapConfig();
+    
+    // Check if LDAP is enabled
+    if (!ldapConfig.enabled) {
+      console.log("LDAP authentication disabled in configuration");
+      return null;
+    }
+    
+    const userDn = `uid=${username},ou=users,${ldapConfig.baseDn}`;
     
     console.log(`LDAP auth attempt for: ${userDn}`);
     
-    const client = ldap.createClient({
-      url: ldapUrl,
-      timeout: 5000,
-      connectTimeout: 10000,
-    });
+    return new Promise((resolve) => {
+      const client = ldap.createClient({
+        url: ldapConfig.ldapUrl,
+        timeout: 5000,
+        connectTimeout: 10000,
+      });
 
-    client.bind(userDn, password, (bindErr: any) => {
-      if (bindErr) {
-        console.error("LDAP bind error:", bindErr);
+      client.bind(userDn, password, (bindErr: any) => {
+        if (bindErr) {
+          console.error("LDAP bind error:", bindErr);
+          client.unbind();
+          resolve(null);
+          return;
+        }
+
+        console.log("LDAP bind successful!");
+        
+        // If bind successful, we know the user is valid
+        // Return user info without doing a search (which might fail due to permissions)
+        const userFound: LDAPUser = {
+          uid: username,
+          mail: `${username}@tasmota.local`,
+          cn: username === "admin" ? "Administrator" : `${username}`,
+          dn: userDn,
+        };
+
         client.unbind();
+        resolve(userFound);
+      });
+
+      client.on("error", (err: any) => {
+        console.error("LDAP client error:", err);
         resolve(null);
-        return;
-      }
-
-      console.log("LDAP bind successful!");
-      
-      // If bind successful, we know the user is valid
-      // Return user info without doing a search (which might fail due to permissions)
-      const userFound: LDAPUser = {
-        uid: username,
-        mail: `${username}@tasmota.local`,
-        cn: username === "admin" ? "Administrator" : `${username}`,
-        dn: userDn,
-      };
-
-      client.unbind();
-      resolve(userFound);
+      });
     });
-
-    client.on("error", (err: any) => {
-      console.error("LDAP client error:", err);
-      resolve(null);
-    });
-  });
+  } catch (error) {
+    console.error("Error reading LDAP config:", error);
+    return null;
+  }
 }
 
 export const authOptions: NextAuthOptions = {
