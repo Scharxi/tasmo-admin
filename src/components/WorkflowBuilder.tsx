@@ -27,7 +27,7 @@ import {
   ArrowLeft,
   Edit
 } from 'lucide-react'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
+
 import Link from 'next/link'
 import { useDevices } from '@/hooks/useDevices'
 import { 
@@ -354,7 +354,7 @@ export function WorkflowBuilder() {
             </div>
             
             <div className="flex items-center gap-3">
-              <ThemeToggle />
+
               <Button 
                 onClick={() => {
                   setEditingWorkflow(null)
