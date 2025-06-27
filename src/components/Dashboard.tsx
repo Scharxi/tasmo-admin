@@ -821,6 +821,7 @@ export function Dashboard() {
                         device={device}
                         onTogglePower={handleTogglePower}
                         onDeleteDevice={handleDeleteDevice}
+                        onDeviceUpdated={() => {}} // The hook will handle the update automatically
                         isLoading={selectedDevice === device.device_id}
                       />
                     ))}
@@ -847,6 +848,7 @@ export function Dashboard() {
                       device={device}
                       onTogglePower={handleTogglePower}
                       onDeleteDevice={handleDeleteDevice}
+                      onDeviceUpdated={() => {}} // The hook will handle the update automatically
                       isLoading={selectedDevice === device.device_id}
                     />
                   ))}
@@ -1013,6 +1015,7 @@ export function Dashboard() {
                   device={device}
                   onTogglePower={handleTogglePower}
                   onDeleteDevice={handleDeleteDevice}
+                  onDeviceUpdated={() => {}} // The hook will handle the update automatically
                   isLoading={selectedDevice === device.device_id}
                 />
               ))}
