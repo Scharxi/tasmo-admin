@@ -3,6 +3,7 @@ import { DeviceService } from '@/lib/db'
 import { DeviceStatus } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { getDeviceEnergyData, getDevicePowerState } from '@/lib/tasmota-service'
 
 // Validation schemas
 const createDeviceSchema = z.object({
@@ -66,37 +67,75 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Transform the data to match the expected API format
-    const transformedDevices = devices.map(device => ({
-      device_id: device.deviceId,
-      device_name: device.deviceName,
-      ip_address: device.ipAddress,
-      mac_address: device.macAddress,
-      firmware_version: device.firmwareVersion,
-      status: device.status.toLowerCase(),
-      power_state: device.powerState,
-      energy_consumption: device.energyConsumption,
-      total_energy: device.totalEnergy,
-      wifi_signal: device.wifiSignal,
-      uptime: device.uptime,
-      voltage: device.voltage,
-      current: device.current,
-      last_seen: device.lastSeen.toISOString(),
-      is_critical: device.isCritical,
-      category: device.category ? {
-        id: device.category.id,
-        name: device.category.name,
-        color: device.category.color,
-        icon: device.category.icon,
-        description: device.category.description,
-        isDefault: device.category.isDefault,
-        createdAt: device.category.createdAt.toISOString(),
-        updatedAt: device.category.updatedAt.toISOString()
-      } : undefined,
-      description: device.description
-    }))
+    // Fetch live data from online devices in parallel (with timeout)
+    const devicesWithLiveData = await Promise.all(
+      devices.map(async (device) => {
+        let liveEnergyData = null
+        let livePowerState = device.powerState
+        let isOnline = device.status === DeviceStatus.ONLINE
 
-    return NextResponse.json(transformedDevices)
+        // Try to get live data from the device (short timeout to not slow down the response)
+        try {
+          const [energyData, powerState] = await Promise.all([
+            getDeviceEnergyData(device.ipAddress, 2000).catch(() => null),
+            getDevicePowerState(device.ipAddress, 1, 2000).catch(() => null),
+          ])
+          
+          if (energyData) {
+            liveEnergyData = energyData
+            isOnline = true
+            
+            // Update database in background (don't await)
+            DeviceService.updateDeviceByDeviceId(device.deviceId, {
+              energyConsumption: energyData.power || 0,
+              totalEnergy: energyData.total || device.totalEnergy,
+              voltage: energyData.voltage || device.voltage || 230,
+              current: energyData.current || device.current || 0,
+              status: 'ONLINE',
+              lastSeen: new Date(),
+            }).catch((err) => console.warn(`Failed to update device ${device.deviceId}:`, err))
+          }
+          
+          if (powerState !== null) {
+            livePowerState = powerState
+            isOnline = true
+          }
+        } catch {
+          // Device might be offline, use cached data
+        }
+
+        return {
+          device_id: device.deviceId,
+          device_name: device.deviceName,
+          ip_address: device.ipAddress,
+          mac_address: device.macAddress,
+          firmware_version: device.firmwareVersion,
+          status: isOnline ? 'online' : device.status.toLowerCase(),
+          power_state: livePowerState,
+          energy_consumption: liveEnergyData?.power ?? device.energyConsumption,
+          total_energy: liveEnergyData?.total ?? device.totalEnergy,
+          wifi_signal: device.wifiSignal,
+          uptime: device.uptime,
+          voltage: liveEnergyData?.voltage ?? device.voltage,
+          current: liveEnergyData?.current ?? device.current,
+          last_seen: isOnline ? new Date().toISOString() : device.lastSeen.toISOString(),
+          is_critical: device.isCritical,
+          category: device.category ? {
+            id: device.category.id,
+            name: device.category.name,
+            color: device.category.color,
+            icon: device.category.icon,
+            description: device.category.description,
+            isDefault: device.category.isDefault,
+            createdAt: device.category.createdAt.toISOString(),
+            updatedAt: device.category.updatedAt.toISOString()
+          } : undefined,
+          description: device.description
+        }
+      })
+    )
+
+    return NextResponse.json(devicesWithLiveData)
   } catch (error) {
     console.error('Error fetching devices:', error)
     return NextResponse.json(
