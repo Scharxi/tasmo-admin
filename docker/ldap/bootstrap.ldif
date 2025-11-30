@@ -1,0 +1,70 @@
+# Tasmota LDAP Directory Structure
+# This file initializes the LDAP directory with organizational units and test users
+
+# Create organizational units
+dn: ou=users,dc=tasmota,dc=local
+objectClass: organizationalUnit
+ou: users
+description: Tasmota Users
+
+dn: ou=groups,dc=tasmota,dc=local
+objectClass: organizationalUnit
+ou: groups
+description: Tasmota Groups
+
+# Create admin group
+dn: cn=admins,ou=groups,dc=tasmota,dc=local
+objectClass: groupOfNames
+cn: admins
+description: System Administrators
+member: uid=admin,ou=users,dc=tasmota,dc=local
+
+# Create users group
+dn: cn=users,ou=groups,dc=tasmota,dc=local
+objectClass: groupOfNames
+cn: users
+description: Regular Users
+member: uid=admin,ou=users,dc=tasmota,dc=local
+member: uid=testuser,ou=users,dc=tasmota,dc=local
+
+# System Administrator Account
+dn: uid=admin,ou=users,dc=tasmota,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: admin
+cn: System Administrator
+sn: Administrator
+givenName: System
+mail: admin@tasmota.local
+userPassword: admin
+description: System Administrator Account
+
+# Test User Account
+dn: uid=testuser,ou=users,dc=tasmota,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: testuser
+cn: Test User
+sn: User
+givenName: Test
+mail: testuser@tasmota.local
+userPassword: admin
+description: Test User Account for Development
+
+# Service User for LDAP Queries (optional)
+dn: uid=ldapservice,ou=users,dc=tasmota,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: ldapservice
+cn: LDAP Service Account
+sn: Service
+givenName: LDAP
+mail: ldapservice@tasmota.local
+userPassword: ldapservice123
+description: Service account for LDAP queries 

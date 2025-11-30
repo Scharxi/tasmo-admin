@@ -50,8 +50,49 @@ services:
     depends_on:
       - postgres
 
+  # LDAP Server for Development/Testing
+  ldap:
+    build:
+      context: ./docker/ldap
+      dockerfile: Dockerfile
+    container_name: tasmota-ldap
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    ports:
+      - "389:389"
+      - "636:636"
+    networks:
+      - tasmota-network
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-b", "dc=tasmota,dc=local", "-D", "cn=admin,dc=tasmota,dc=local", "-w", "admin", "(objectClass=*)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # LDAP Admin Interface
+  phpldapadmin:
+    image: osixia/phpldapadmin:latest
+    container_name: tasmota-phpldapadmin
+    restart: unless-stopped
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "ldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8081:80"
+    networks:
+      - tasmota-network
+    depends_on:
+      - ldap
+
 volumes:
   postgres_data:
+  ldap_data:
+  ldap_config:
 
 networks:
   tasmota-network:

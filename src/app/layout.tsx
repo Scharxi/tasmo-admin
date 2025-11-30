@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { SessionProvider } from "@/providers/SessionProvider";
 import { ToastContainer } from "@/components/ui/toast";
 import "./globals.css";
 
@@ -37,12 +38,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
       >
-        <ThemeProvider>
-          <QueryProvider>
-            {children}
-            <ToastContainer />
-          </QueryProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            <QueryProvider>
+              {children}
+              <ToastContainer />
+            </QueryProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

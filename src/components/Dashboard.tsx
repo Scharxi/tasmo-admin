@@ -21,6 +21,8 @@ import { TasmotaDevice, DeviceCategory } from '@/lib/api'
 import Link from 'next/link'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, AlertTriangle, Grid, List, Filter, Palette, LayoutGrid, Settings, Trash2, ShieldAlert } from 'lucide-react'
+import { LogoutButton } from '@/components/LogoutButton'
+import { SessionDebug } from '@/components/SessionDebug'
 
 
 // Modern SVG Icons with better styling
@@ -318,6 +320,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <SessionDebug />
       {/* Simplified Background - Static for better performance */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-blue-100/60 to-transparent dark:from-blue-900/30 dark:to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
@@ -374,6 +377,7 @@ export function Dashboard() {
                   >
                     <RefreshIcon />
                   </button>
+                  <LogoutButton />
                 </div>
               </div>
             </div>
