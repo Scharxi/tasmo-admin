@@ -5,17 +5,17 @@ import { z } from 'zod'
 // Validation schema
 const updateCategorySchema = z.object({
   categoryId: z.string().optional(),
-  description: z.string().optional()
+  description: z.string().optional(),
 })
 
 // PUT /api/devices/[deviceId]/category - Update device category
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
     const body = await request.json()
-    const { deviceId } = params
+    const { deviceId } = await params
     
     // Validate input
     const validatedData = updateCategorySchema.parse(body)
@@ -23,7 +23,7 @@ export async function PUT(
     // Check if device exists
     const existingDevice = await prisma.device.findUnique({
       where: { deviceId },
-      include: { category: true }
+      include: { category: true },
     })
     
     if (!existingDevice) {
@@ -36,7 +36,7 @@ export async function PUT(
     // Check if category exists (if categoryId is provided)
     if (validatedData.categoryId) {
       const categoryExists = await prisma.category.findUnique({
-        where: { id: validatedData.categoryId }
+        where: { id: validatedData.categoryId },
       })
       
       if (!categoryExists) {
@@ -52,11 +52,11 @@ export async function PUT(
       where: { deviceId },
       data: {
         categoryId: validatedData.categoryId || null,
-        description: validatedData.description
+        description: validatedData.description,
       },
       include: {
-        category: true
-      }
+        category: true,
+      },
     })
     
     // Transform response to match frontend interface
@@ -83,9 +83,9 @@ export async function PUT(
         description: updatedDevice.category.description,
         isDefault: updatedDevice.category.isDefault,
         createdAt: updatedDevice.category.createdAt.toISOString(),
-        updatedAt: updatedDevice.category.updatedAt.toISOString()
+        updatedAt: updatedDevice.category.updatedAt.toISOString(),
       } : undefined,
-      description: updatedDevice.description
+      description: updatedDevice.description,
     }
     
     return NextResponse.json(transformedDevice)
@@ -103,4 +103,4 @@ export async function PUT(
       { status: 500 }
     )
   }
-} 
+}

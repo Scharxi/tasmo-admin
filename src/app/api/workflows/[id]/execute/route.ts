@@ -1,38 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { setDevicePower, getDevicePowerState } from '@/lib/tasmota-service'
 
 // Simple delay function
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// Function to check device state
-async function checkDeviceState(deviceId: string): Promise<boolean> {
+// Function to check device state using SDK
+const checkDeviceState = async (deviceId: string): Promise<boolean> => {
   try {
     const device = await prisma.device.findUnique({
-      where: { deviceId: deviceId }
+      where: { deviceId },
     })
-    return device?.powerState || false
+    
+    if (!device) {
+      return false
+    }
+    
+    // Try to get real-time state from device
+    const powerState = await getDevicePowerState(device.ipAddress, 1, 5000)
+    
+    // If we can't reach the device, fall back to database value
+    if (powerState === null) {
+      console.warn(`Could not reach device ${deviceId}, using cached state`)
+      return device.powerState
+    }
+    
+    // Update database with real state
+    await prisma.device.update({
+      where: { deviceId },
+      data: { powerState, lastSeen: new Date() },
+    })
+    
+    return powerState
   } catch (error) {
     console.error(`Error checking device state for ${deviceId}:`, error)
     return false
   }
 }
 
-// Function to toggle device power
-async function toggleDevicePower(deviceId: string, powerOn: boolean): Promise<boolean> {
+// Function to set device power using SDK
+const setDevicePowerState = async (deviceId: string, powerOn: boolean): Promise<boolean> => {
   try {
-    // In a real implementation, this would call the actual Tasmota device
-    // For now, we'll just update the database
-    await prisma.device.update({
-      where: { deviceId: deviceId },
-      data: { powerState: powerOn }
+    const device = await prisma.device.findUnique({
+      where: { deviceId },
     })
     
-    // Simulate device response time
-    await delay(1000)
+    if (!device) {
+      console.error(`Device ${deviceId} not found`)
+      return false
+    }
+    
+    // Use SDK to set power state on real device
+    const result = await setDevicePower(device.ipAddress, powerOn, 1, 10000)
+    
+    if (!result.success) {
+      console.error(`Failed to set power for device ${deviceId}: ${result.error}`)
+      return false
+    }
+    
+    // Update database with new state
+    await prisma.device.update({
+      where: { deviceId },
+      data: {
+        powerState: result.powerState ?? powerOn,
+        status: 'ONLINE',
+        lastSeen: new Date(),
+      },
+    })
     
     return true
   } catch (error) {
-    console.error(`Error toggling device power for ${deviceId}:`, error)
+    console.error(`Error setting device power for ${deviceId}:`, error)
     return false
   }
 }
@@ -51,13 +89,13 @@ export async function POST(
         steps: {
           include: {
             conditions: true,
-            device: true
+            device: true,
           },
           orderBy: {
-            order: 'asc'
-          }
-        }
-      }
+            order: 'asc',
+          },
+        },
+      },
     })
 
     if (!workflow) {
@@ -77,9 +115,9 @@ export async function POST(
     // Create execution record
     const execution = await prisma.workflowExecution.create({
       data: {
-        workflowId: workflowId,
-        status: 'RUNNING'
-      }
+        workflowId,
+        status: 'RUNNING',
+      },
     })
 
     try {
@@ -105,21 +143,23 @@ export async function POST(
 
         // Execute the step action
         switch (step.action) {
-          case 'TURN_ON':
-            const turnOnSuccess = await toggleDevicePower(step.deviceId, true)
+          case 'TURN_ON': {
+            const turnOnSuccess = await setDevicePowerState(step.deviceId, true)
             if (!turnOnSuccess) {
               throw new Error(`Failed to turn on device ${step.device.deviceName}`)
             }
             console.log(`✓ Turned ON device: ${step.device.deviceName}`)
             break
+          }
 
-          case 'TURN_OFF':
-            const turnOffSuccess = await toggleDevicePower(step.deviceId, false)
+          case 'TURN_OFF': {
+            const turnOffSuccess = await setDevicePowerState(step.deviceId, false)
             if (!turnOffSuccess) {
               throw new Error(`Failed to turn off device ${step.device.deviceName}`)
             }
             console.log(`✓ Turned OFF device: ${step.device.deviceName}`)
             break
+          }
 
           case 'DELAY':
             if (step.delay && step.delay > 0) {
@@ -141,8 +181,8 @@ export async function POST(
         where: { id: execution.id },
         data: {
           status: 'COMPLETED',
-          completedAt: new Date()
-        }
+          completedAt: new Date(),
+        },
       })
 
       console.log(`✅ Workflow "${workflow.name}" completed successfully`)
@@ -150,7 +190,7 @@ export async function POST(
       return NextResponse.json({
         success: true,
         message: `Workflow "${workflow.name}" executed successfully`,
-        executionId: execution.id
+        executionId: execution.id,
       })
 
     } catch (stepError) {
@@ -160,8 +200,8 @@ export async function POST(
         data: {
           status: 'FAILED',
           completedAt: new Date(),
-          errorMessage: stepError instanceof Error ? stepError.message : 'Unknown error'
-        }
+          errorMessage: stepError instanceof Error ? stepError.message : 'Unknown error',
+        },
       })
 
       console.error(`❌ Workflow "${workflow.name}" failed:`, stepError)
@@ -170,7 +210,7 @@ export async function POST(
         {
           error: 'Workflow execution failed',
           message: stepError instanceof Error ? stepError.message : 'Unknown error',
-          executionId: execution.id
+          executionId: execution.id,
         },
         { status: 500 }
       )
@@ -183,4 +223,4 @@ export async function POST(
       { status: 500 }
     )
   }
-} 
+}

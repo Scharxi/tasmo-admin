@@ -3,11 +3,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
     const { isCritical } = await request.json()
-    const { deviceId } = params
+    const { deviceId } = await params
 
     if (typeof isCritical !== 'boolean') {
       return NextResponse.json(
@@ -47,10 +47,10 @@ export async function PATCH(
     }
 
     return NextResponse.json(deviceResponse)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating device critical status:', error)
     
-    if (error.code === 'P2025') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       return NextResponse.json(
         { error: 'Device not found' },
         { status: 404 }
@@ -62,4 +62,4 @@ export async function PATCH(
       { status: 500 }
     )
   }
-} 
+}

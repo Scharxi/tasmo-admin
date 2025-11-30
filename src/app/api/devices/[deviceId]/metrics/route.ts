@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DeviceService } from '@/lib/db'
-import { getDeviceEnergyData, getDeviceStatus } from '@/lib/tasmota-config'
+import { getDeviceEnergyData, getDeviceStatus } from '@/lib/tasmota-service'
 
 // GET /api/devices/[deviceId]/metrics - Get live device metrics
 export async function GET(
@@ -26,7 +26,7 @@ export async function GET(
       )
     }
     
-    // Try to get live energy data from device
+    // Try to get live energy data from device using SDK
     const energyData = await getDeviceEnergyData(device.ipAddress, 8000)
     
     if (!energyData) {
@@ -44,7 +44,7 @@ export async function GET(
         has_energy_monitoring: false,
         device_online: false,
         last_update: device.lastSeen.toISOString(),
-        message: 'Using cached data - device may be offline'
+        message: 'Using cached data - device may be offline',
       })
     }
     
@@ -52,43 +52,43 @@ export async function GET(
     const updatePromises = [
       // Update current device state
       DeviceService.updateDeviceByDeviceId(deviceId, {
-        energyConsumption: energyData.Power || 0,
-        totalEnergy: energyData.Total || device.totalEnergy,
-        voltage: energyData.Voltage || device.voltage || 230,
-        current: energyData.Current || device.current || 0,
+        energyConsumption: energyData.power || 0,
+        totalEnergy: energyData.total || device.totalEnergy,
+        voltage: energyData.voltage || device.voltage || 230,
+        current: energyData.current || device.current || 0,
         status: 'ONLINE',
-        lastSeen: new Date()
+        lastSeen: new Date(),
       }),
       
       // Store historical reading (with intelligent filtering)
       DeviceService.addEnergyReading(deviceId, {
-        power: energyData.Power || 0,
-        energy: energyData.Total || device.totalEnergy || 0,
-        voltage: energyData.Voltage || device.voltage || 230,
-        current: energyData.Current || device.current || 0
-      })
+        power: energyData.power || 0,
+        energy: energyData.total || device.totalEnergy || 0,
+        voltage: energyData.voltage || device.voltage || 230,
+        current: energyData.current || device.current || 0,
+      }),
     ]
     
     // Execute updates in background
-    Promise.all(updatePromises).catch(error => {
+    Promise.all(updatePromises).catch((error) => {
       console.warn(`Failed to update device ${deviceId} with fresh metrics:`, error)
     })
     
     // Return live metrics
     return NextResponse.json({
-      power: energyData.Power || 0,
-      apparent_power: energyData.ApparentPower || (energyData.Power || 0) * 1.05,
-      reactive_power: energyData.ReactivePower || (energyData.Power || 0) * 0.1,
-      factor: energyData.Factor || 0.95,
-      voltage: energyData.Voltage || 230,
-      current: energyData.Current || 0,
-      total: energyData.Total || 0,
-      today: energyData.Today || 0,
-      yesterday: energyData.Yesterday || 0,
-      has_energy_monitoring: energyData.has_energy_monitoring ?? true,
+      power: energyData.power || 0,
+      apparent_power: energyData.apparentPower || (energyData.power || 0) * 1.05,
+      reactive_power: energyData.reactivePower || (energyData.power || 0) * 0.1,
+      factor: energyData.factor || 0.95,
+      voltage: energyData.voltage || 230,
+      current: energyData.current || 0,
+      total: energyData.total || 0,
+      today: energyData.today || 0,
+      yesterday: energyData.yesterday || 0,
+      has_energy_monitoring: energyData.hasEnergyMonitoring ?? true,
       device_online: true,
-      last_update: energyData.last_update || new Date().toISOString(),
-      message: energyData.has_energy_monitoring ? 'Live energy monitoring data' : 'Basic device data - no energy monitoring'
+      last_update: energyData.lastUpdate || new Date().toISOString(),
+      message: energyData.hasEnergyMonitoring ? 'Live energy monitoring data' : 'Basic device data - no energy monitoring',
     })
     
   } catch (error) {
@@ -100,7 +100,7 @@ export async function GET(
         error: 'Failed to fetch device metrics',
         details: error instanceof Error ? error.message : 'Unknown error',
         has_energy_monitoring: false,
-        device_online: false
+        device_online: false,
       },
       { status: 500 }
     )
@@ -131,20 +131,20 @@ export async function POST(
       )
     }
     
-    // Force comprehensive status update
+    // Force comprehensive status update using SDK
     const deviceStatus = await getDeviceStatus(device.ipAddress, 10000)
     
     if (!deviceStatus) {
       // Mark device as offline
       await DeviceService.updateDeviceByDeviceId(deviceId, {
         status: 'OFFLINE',
-        lastSeen: new Date()
+        lastSeen: new Date(),
       })
       
       return NextResponse.json(
         { 
           error: 'Device is not responding and has been marked offline',
-          device_online: false
+          device_online: false,
         },
         { status: 503 }
       )
@@ -152,15 +152,15 @@ export async function POST(
     
     // Update database with comprehensive status
     const updatedDevice = await DeviceService.updateDeviceByDeviceId(deviceId, {
-      powerState: deviceStatus.power_state,
-      energyConsumption: deviceStatus.energy_consumption || 0,
-      totalEnergy: deviceStatus.total_energy || device.totalEnergy,
-      wifiSignal: deviceStatus.wifi_signal || device.wifiSignal,
+      powerState: deviceStatus.powerState,
+      energyConsumption: deviceStatus.energyConsumption || 0,
+      totalEnergy: deviceStatus.totalEnergy || device.totalEnergy,
+      wifiSignal: deviceStatus.wifiSignal || device.wifiSignal,
       uptime: deviceStatus.uptime || 0,
       voltage: deviceStatus.voltage || 230,
       current: deviceStatus.current || 0,
       status: 'ONLINE',
-      lastSeen: new Date()
+      lastSeen: new Date(),
     })
     
     // Return updated device data
@@ -177,7 +177,7 @@ export async function POST(
       status: updatedDevice.status.toLowerCase(),
       last_seen: updatedDevice.lastSeen.toISOString(),
       device_online: true,
-      message: 'Device status refreshed successfully'
+      message: 'Device status refreshed successfully',
     })
     
   } catch (error) {
@@ -187,9 +187,9 @@ export async function POST(
     return NextResponse.json(
       { 
         error: 'Failed to refresh device metrics',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )
   }
-} 
+}

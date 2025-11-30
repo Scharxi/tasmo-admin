@@ -52,6 +52,13 @@ const ChipIcon = () => (
   </svg>
 )
 
+interface LiveMetrics {
+  power: number
+  voltage: number
+  current: number
+  total: number
+}
+
 interface DeviceCardProps {
   device: TasmotaDevice
   onTogglePower: (deviceId: string) => void
@@ -68,6 +75,41 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
   const [showCriticalConfirm, setShowCriticalConfirm] = useState(false)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [securityEnabled, setSecurityEnabled] = useState(false)
+  
+  // Live metrics state
+  const [liveMetrics, setLiveMetrics] = useState<LiveMetrics | null>(null)
+
+  // Fetch live metrics from the actual Tasmota device
+  useEffect(() => {
+    if (device.status === 'offline') {
+      setLiveMetrics(null)
+      return
+    }
+
+    const fetchLiveMetrics = async () => {
+      try {
+        const response = await fetch(`/api/devices/${device.device_id}/metrics`)
+        if (response.ok) {
+          const data = await response.json()
+          setLiveMetrics({
+            power: data.power ?? 0,
+            voltage: data.voltage ?? 230,
+            current: data.current ?? 0,
+            total: data.total ?? 0,
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch live metrics:', error)
+      }
+    }
+
+    // Fetch immediately
+    fetchLiveMetrics()
+
+    // Poll every 5 seconds for live data
+    const interval = setInterval(fetchLiveMetrics, 5000)
+    return () => clearInterval(interval)
+  }, [device.device_id, device.status])
 
   // Load security configuration on component mount
   useEffect(() => {
@@ -300,23 +342,31 @@ export function DeviceCard({ device, onTogglePower, onDeleteDevice, onDeviceUpda
             </div>
           </div>
 
-          {/* Power Metrics */}
+          {/* Power Metrics - Live Data */}
           <div className="grid grid-cols-4 gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
             <div className="text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">VERBRAUCH</p>
-              <p className="text-base font-bold text-blue-600 dark:text-blue-400">{formatEnergy(device.energy_consumption)}</p>
+              <p className="text-base font-bold text-blue-600 dark:text-blue-400">
+                {formatEnergy(liveMetrics?.power ?? device.energy_consumption)}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">SPANNUNG</p>
-              <p className="text-base font-bold text-gray-900 dark:text-gray-100">{device.voltage?.toFixed(0) || 'N/A'} V</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                {(liveMetrics?.voltage ?? device.voltage)?.toFixed(0) || 'N/A'} V
+              </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">STROM</p>
-              <p className="text-base font-bold text-gray-900 dark:text-gray-100">{device.current?.toFixed(2) || 'N/A'} A</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                {(liveMetrics?.current ?? device.current)?.toFixed(2) || 'N/A'} A
+              </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">GESAMT</p>
-              <p className="text-base font-bold text-purple-600 dark:text-purple-400">{device.total_energy.toFixed(1)}kWh</p>
+              <p className="text-base font-bold text-purple-600 dark:text-purple-400">
+                {(liveMetrics?.total ?? device.total_energy)?.toFixed(1) || '0.0'}kWh
+              </p>
             </div>
           </div>
 
