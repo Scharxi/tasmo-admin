@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DeviceService } from '@/lib/db'
 import { prisma } from '@/lib/prisma'
+import { setDeviceName } from '@/lib/tasmota-service'
 
 // PUT /api/devices/[deviceId] - Update device settings
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
     const { deviceId } = await params
@@ -27,8 +28,25 @@ export async function PUT(
       )
     }
 
-    // Update device settings
-    const updateData: any = {}
+    // If device name is being updated, send it to the actual Tasmota device first
+    if (body.deviceName !== undefined && body.deviceName !== device.deviceName) {
+      const result = await setDeviceName(device.ipAddress, body.deviceName, 10000)
+      
+      if (!result.success) {
+        return NextResponse.json(
+          { 
+            error: `Failed to update device name on Tasmota device: ${result.error}`,
+            deviceOffline: true,
+          },
+          { status: 503 }
+        )
+      }
+      
+      console.log(`Device name updated on Tasmota device: ${result.newName}`)
+    }
+
+    // Update device settings in database
+    const updateData: Record<string, unknown> = {}
     if (body.deviceName !== undefined) {
       updateData.deviceName = body.deviceName
     }
@@ -42,8 +60,8 @@ export async function PUT(
     const deviceWithCategory = await prisma.device.findUnique({
       where: { id: updatedDevice.id },
       include: {
-        category: true
-      }
+        category: true,
+      },
     })
 
     if (!deviceWithCategory) {
@@ -78,9 +96,9 @@ export async function PUT(
         description: deviceWithCategory.category.description,
         isDefault: deviceWithCategory.category.isDefault,
         createdAt: deviceWithCategory.category.createdAt.toISOString(),
-        updatedAt: deviceWithCategory.category.updatedAt.toISOString()
+        updatedAt: deviceWithCategory.category.updatedAt.toISOString(),
       } : undefined,
-      description: deviceWithCategory.description
+      description: deviceWithCategory.description,
     }
 
     return NextResponse.json(transformedDevice)
@@ -96,7 +114,7 @@ export async function PUT(
 // DELETE /api/devices/[deviceId] - Delete device
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { deviceId: string } }
+  { params }: { params: Promise<{ deviceId: string }> }
 ) {
   try {
     const { deviceId } = await params
@@ -128,4 +146,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-} 
+}
