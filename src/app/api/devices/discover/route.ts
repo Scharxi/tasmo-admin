@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDeviceStatus, transformDeviceData } from '@/lib/tasmota-config'
+import { getDeviceStatus, isTasmotaDevice } from '@/lib/tasmota-service'
 
 // Function to generate IP addresses from a range
-function generateIPRange(startIP: string, endIP: string): string[] {
+const generateIPRange = (startIP: string, endIP: string): string[] => {
   const ips: string[] = []
   
-  // Parse IP addresses
   const parseIP = (ip: string) => ip.split('.').map(Number)
   const formatIP = (parts: number[]) => parts.join('.')
   
   const start = parseIP(startIP)
   const end = parseIP(endIP)
   
-  // Validate IP format
   if (start.length !== 4 || end.length !== 4) {
     throw new Error('Invalid IP address format')
   }
@@ -40,7 +38,7 @@ function generateIPRange(startIP: string, endIP: string): string[] {
 }
 
 // Function to parse CIDR notation
-function parseCIDR(cidr: string): string[] {
+const parseCIDR = (cidr: string): string[] => {
   const [network, prefixStr] = cidr.split('/')
   const prefix = parseInt(prefixStr)
   
@@ -65,7 +63,7 @@ function parseCIDR(cidr: string): string[] {
       (hostInt >> 24) & 255,
       (hostInt >> 16) & 255,
       (hostInt >> 8) & 255,
-      hostInt & 255
+      hostInt & 255,
     ].join('.')
     ips.push(ip)
   }
@@ -73,32 +71,40 @@ function parseCIDR(cidr: string): string[] {
   return ips
 }
 
-// Quick HTTP check to see if anything is responding on port 80
-async function quickHttpCheck(ipAddress: string): Promise<boolean> {
+// Function to discover a device using the service
+const discoverDevice = async (ipAddress: string): Promise<any | null> => {
   try {
-    const response = await fetch(`http://${ipAddress}/`, {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(1000), // Very short timeout for quick check
-    })
-    return response.ok || response.status < 500 // Accept any response that's not a server error
-  } catch (error) {
-    return false
+    // Use service's isTasmotaDevice for quick check
+    const isTasmota = await isTasmotaDevice(ipAddress, 2000)
+    if (!isTasmota) {
+      return null
+    }
+    
+    // Get full device status
+    const deviceStatus = await getDeviceStatus(ipAddress, 3000)
+    if (!deviceStatus) {
+      return null
+    }
+    
+    return {
+      device_id: deviceStatus.deviceId,
+      device_name: deviceStatus.deviceName,
+      ip_address: ipAddress,
+      mac_address: deviceStatus.macAddress,
+      firmware_version: deviceStatus.firmwareVersion,
+      status: deviceStatus.status,
+      power_state: deviceStatus.powerState,
+      energy_consumption: deviceStatus.energyConsumption,
+      total_energy: deviceStatus.totalEnergy,
+      wifi_signal: deviceStatus.wifiSignal,
+      uptime: deviceStatus.uptime,
+      voltage: deviceStatus.voltage,
+      current: deviceStatus.current,
+      last_seen: deviceStatus.lastSeen,
+    }
+  } catch {
+    return null
   }
-}
-
-// Function to discover a device and transform its data
-async function discoverDevice(ipAddress: string): Promise<any | null> {
-  // First, do a quick HTTP check to see if anything is responding
-  const isReachable = await quickHttpCheck(ipAddress)
-  if (!isReachable) {
-    return null // Skip Tasmota-specific checks if nothing responds on HTTP
-  }
-  
-  // If something responded, try Tasmota-specific discovery
-  const deviceData = await getDeviceStatus(ipAddress, 2000) // Shorter timeout since we know it's reachable
-  if (!deviceData) return null
-  
-  return transformDeviceData(deviceData, ipAddress)
 }
 
 // POST /api/devices/discover - Discover available Tasmota devices in IP range
@@ -140,9 +146,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Process IPs in batches to avoid overwhelming the network
+    // Process IPs in batches using service-powered discovery
     const discoveredDevices: any[] = []
-    const batchSize = Math.min(maxConcurrency, 50) // Increased batch size since we do quick checks first
+    const batchSize = Math.min(maxConcurrency, 50)
     
     for (let i = 0; i < ipAddresses.length; i += batchSize) {
       const batch = ipAddresses.slice(i, i + batchSize)
@@ -151,20 +157,20 @@ export async function POST(request: NextRequest) {
       
       console.log(`Processing batch ${batchNumber}/${totalBatches} (IPs ${i + 1}-${Math.min(i + batchSize, ipAddresses.length)} of ${ipAddresses.length})`)
       
-      const discoveryPromises = batch.map(ip => discoverDevice(ip))
+      const discoveryPromises = batch.map((ip) => discoverDevice(ip))
       const results = await Promise.all(discoveryPromises)
       
       // Filter out null results (offline devices)
-      const batchDevices = results.filter(device => device !== null)
+      const batchDevices = results.filter((device) => device !== null)
       discoveredDevices.push(...batchDevices)
       
       if (batchDevices.length > 0) {
         console.log(`Found ${batchDevices.length} device(s) in batch ${batchNumber}`)
       }
       
-      // Small delay between batches to be network-friendly, but smaller since we're doing quicker checks
+      // Small delay between batches to be network-friendly
       if (i + batchSize < ipAddresses.length) {
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise((resolve) => setTimeout(resolve, 50))
       }
     }
     
@@ -173,7 +179,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       discoveredDevices,
       totalScanned: ipAddresses.length,
-      totalFound: discoveredDevices.length
+      totalFound: discoveredDevices.length,
     })
   } catch (error) {
     console.error('Error during device discovery:', error)
@@ -182,4 +188,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
