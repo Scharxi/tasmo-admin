@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,7 @@ const errorMessages: Record<string, string> = {
   SessionRequired: "Sie müssen sich anmelden, um auf diese Seite zuzugreifen.",
 };
 
-export default function AuthErrorPage() {
+const AuthErrorContent = () => {
   const searchParams = useSearchParams();
   const error = searchParams.get("error") || "Default";
   const errorMessage = errorMessages[error] || errorMessages.Default;
@@ -111,4 +112,23 @@ export default function AuthErrorPage() {
       </div>
     </div>
   );
-} 
+};
+
+const AuthErrorFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="w-full max-w-md space-y-8 px-4 text-center">
+      <div className="mx-auto h-16 w-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-4 animate-pulse">
+        <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+      </div>
+      <p className="text-gray-600 dark:text-gray-400">Laden...</p>
+    </div>
+  </div>
+);
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<AuthErrorFallback />}>
+      <AuthErrorContent />
+    </Suspense>
+  );
+}

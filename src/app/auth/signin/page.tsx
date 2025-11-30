@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Eye, EyeOff, LogIn, Wifi, Shield, Zap, User, Server } from "lucide-reac
 
 type AuthMode = 'admin' | 'ldap';
 
-export default function SignInPage() {
+const SignInContent = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -426,4 +426,36 @@ export default function SignInPage() {
       `}</style>
     </div>
   );
-} 
+};
+
+const SignInFallback = () => (
+  <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-slate-900 dark:to-indigo-950">
+    <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+    <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
+      <Card className="shadow-2xl border-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150">
+        <CardContent className="p-8">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-lg font-medium text-gray-700 dark:text-gray-300">
+              Laden...
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+    <style jsx>{`
+      .bg-grid-pattern {
+        background-image: radial-gradient(circle, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+    `}</style>
+  </div>
+);
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<SignInFallback />}>
+      <SignInContent />
+    </Suspense>
+  );
+}
